@@ -23,6 +23,8 @@
 #define WITHTWISW 	1	/* Использование программного контроллера TWI (I2C) */
 //#define WITHCPUADCHW 	1	/* использование ADC */
 
+#define WITHSDRAMHW	1	/* В процессоре есть внешняя память */
+
 //#define WITHUSBHW_DEVICE		USB_OTG_FS
 //#define WITHUSBHW	1	/* Используется встроенная в процессор поддержка USB */
 //#define WITHUSBDEV_VBUSSENSE	1	/* используется предопределенный вывод VBUS_SENSE */
@@ -46,14 +48,14 @@
 
 #else
 
-	//#define WITHUART1HW	1	/* Используется периферийный контроллер последовательного порта #1 */
+	#define WITHUART1HW	1	/* Используется периферийный контроллер последовательного порта #1 */
 	//#define WITHUART2HW	1	/* Используется периферийный контроллер последовательного порта #2 */
 
 	//#define WITHCAT_CDC		1	/* использовать виртуальный последовательный порт на USB соединении */
-	#define WITHCAT_USART2		1
-	#define WITHDEBUG_USART2	1
-	#define WITHMODEM_USART2	1
-	#define WITHNMEA_USART2		1
+	//#define WITHCAT_USART2		1
+	#define WITHDEBUG_USART1	1
+	//#define WITHMODEM_USART2	1
+	//#define WITHNMEA_USART2		1
 
 #endif
 
@@ -293,9 +295,9 @@
 		} while (0)
 #endif
 
-#define HARDWARE_USART2_INITIALIZE() do { \
-		arm_hardware_pioa_altfn2((1uL << 2) | (1uL << 3), AF_USART2); /* PA2: TX DATA line (2 MHz), PA3: RX data line */ \
-		arm_hardware_pioa_updown((1uL << 3), 0);	/* PA3: pull-up RX data */ \
+#define HARDWARE_USART1_INITIALIZE() do { \
+		arm_hardware_pioa_altfn2((1uL << 9) | (1uL << 10), AF_USART2); /* PA2: TX DATA line (2 MHz), PA3: RX data line */ \
+		arm_hardware_pioa_updown((1uL << 10), 0);	/* PA3: pull-up RX data */ \
 	} while (0)
 
 //#define SPI_IOUPDATE_PORT_C(v)	do { GPIOC->BSRR = BSRR_C(v); } while (0)

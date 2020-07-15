@@ -12,14 +12,14 @@
 #define PION_DSP_CTLSTYLE_V1_H_INCLUDED 1
 
 	#define WITHSAICLOCKFROMI2S	1	/* Блок SAI1 тактируется от PLL I2S */
-	//#define	WITHI2SCLOCKFROMPIN 1	// тактовая частота на SPI2 (I2S) подается с внешнего генератора, в процессор вводится через MCK сигнал интерфейса
-	//#define	WITHSAICLOCKFROMPIN 1	// тактовая частота на SAI1 подается с внешнего генератора, в процессор вводится через MCK сигнал интерфейса
+	//#define WITHI2SCLOCKFROMPIN 1	// тактовая частота на SPI2 (I2S) подается с внешнего генератора, в процессор вводится через MCK сигнал интерфейса
+	//#define WITHSAICLOCKFROMPIN 1	// тактовая частота на SAI1 подается с внешнего генератора, в процессор вводится через MCK сигнал интерфейса
 
 	#define WITHUSEPLL		1	/* Главная PLL	*/
 	//#define WITHUSESAIPLL	1	/* SAI PLL	*/
 	//#define WITHUSESAII2S	1	/* I2S PLL	*/
 
-	#if 0
+	#if 1
 		// при наличии внешнего кварцевого резонатора
 		#define WITHCPUXTAL 8000000UL	/* На процессоре установлен кварц 8.000 МГц */
 		#define REF1_DIV 4			// ref freq = 2.000 MHz
@@ -158,10 +158,14 @@
 	// --- вариации прошивки, специфические для разных плат
 
 
-	#define CTLREGSTYLE_NOCTLREG	1		/* управляющий регистр на SPI отсутствует */
+	#define CTLREGMODE_NOCTLREG	1		/* управляющий регистр на SPI отсутствует */
 	#define WITHAGCMODENONE		1	/* Режимами АРУ не управляем */
 	#define WITHPREAMPATT2_6DB		1	// Управление УВЧ и двухкаскадным аттенюатором с затуханиями 0 - 6 - 12 - 18 dB */
 	#define BOARD_AGCCODE_OFF 0x01
+
+	#define BOARD_NOTCH_OFF		0
+	#define BOARD_NOTCH_MANUAL	1
+	#define BOARD_NOTCH_AUTO	2
 	//#define DSTYLE_UR3LMZMOD	1	// Тестирование - расположение элементов экрана в трансиверах UR3LMZ
 	//#define	FONTSTYLE_ITALIC	1	// Использовать альтернативный шрифт
 
@@ -178,10 +182,6 @@
 
 	// +++ Одна из этих строк определяет тип дисплея, для которого компилируется прошивка
 	//#define LCDMODE_HARD_SPI	1	/* LCD over SPI line */
-	//#define LCDMODE_LTDC	1		/* Use STM32F4xxx with LCD-TFT Controller (LTDC) */
-	//#define LCDMODE_LTDC_L8	1	/* используется 8 бит на пиксель представление экрана. Иначе - 16 бит. */
-	//#define LCDMODE_LTDC_L24	1	/* 32-bit на пиксель в памяти (3 байта) */
-	//#define LCDMODE_LTDCSDRAMBUFF	1	/* используется область внешнего SDRAM для хранения framebuffer */
 	//#define LCDMODE_WH2002	1	/* тип применяемого индикатора 20*2, возможно вместе с LCDMODE_HARD_SPI */
 	//#define LCDMODE_WH1602	1	/* тип применяемого индикатора 16*2 */
 	//#define LCDMODE_WH1604	1	/* тип применяемого индикатора 16*4 */
@@ -212,7 +212,7 @@
 	//#define LCDMODE_UC1608_TOPDOWN	1	/* LCDMODE_UC1608 - перевернуть изображение (для выводов сверху) */
 	//#define LCDMODE_ST7735	1	/* Индикатор 160*128 с контроллером Sitronix ST7735 - TFT панель 160 * 128 HY-1.8-SPI */
 	//#define LCDMODE_ST7735_TOPDOWN	1	/* LCDMODE_ST7735 - перевернуть изображение (для выводов справа) */
-	#define LCDMODE_ST7565S	1	/* Индикатор WO12864C2-TFH# 128*64 с контроллером Sitronix ST7565S */
+	//#define LCDMODE_ST7565S	1	/* Индикатор WO12864C2-TFH# 128*64 с контроллером Sitronix ST7565S */
 	//#define LCDMODE_ST7565S_TOPDOWN	1	/* LCDMODE_ST7565S - перевернуть изображение (для выводов сверху) */
 	//#define LCDMODE_ILI9320	1	/* Индикатор 248*320 с контроллером ILI9320 */
 	//#define LCDMODE_ILI9341	1	/* 320*240 SF-TC240T-9370-T с контроллером ILI9341 - STM32F4DISCO */
@@ -220,6 +220,7 @@
 	//#define LCDMODE_ILI8961	1	/* 320 * 240 HHT270C-8961-6A6, RGB, ILI8961, use LCDMODE_LTDC_L24 and LCDMODE_LTDCSDRAMBUFF */
 	//#define LCDMODE_ILI8961_TOPDOWN	1
 	//#define LCDMODE_LQ043T3DX02K 1	/* LQ043T3DX02K panel (272*480) - SONY PSP-1000 display */
+	#define LCDMODE_DUMMY	1
 	// --- Одна из этих строк определяет тип дисплея, для которого компилируется прошивка
 
 	#define ENCRES_DEFAULT ENCRES_128
@@ -257,7 +258,7 @@
 	//#define WITHIFSHIFTOFFSET	(-250)	/* Начальное занчение IF SHIFT */
 	//#define WITHPBT		1	/* используется PBT (если LO3 есть) */
 	//#define WITHCAT		1	/* используется CAT */
-	//#define WITHDEBUG		1	/* Отладочная печать через COM-порт. Без CAT (WITHCAT) */
+	#define WITHDEBUG		1	/* Отладочная печать через COM-порт. Без CAT (WITHCAT) */
 	//#define WITHBEACON	1	/* Используется режим маяка */
 	//#define WITHVOX		1	/* используется VOX */
 	//#define WITHSHOWSWRPWR 1	/* на дисплее одновременно отображаются SWR-meter и PWR-meter */
@@ -285,6 +286,10 @@
 
 	//#define LO1PHASES	1		/* Прямой синтез первого гетеродина двумя DDS с програмимруемым сдвигом фазы */
 	#define DEFPREAMPSTATE 	1	/* УВЧ по умолчанию включён (1) или выключен (0) */
+
+	#define WITHPOWERTRIMMIN	5	// Нижний предел регулировки (показываемый на дисплее)
+	#define WITHPOWERTRIMMAX	100	// Верхний предел регулировки (показываемый на дисплее)
+	#define WITHPOWERTRIMATU	50	// Значение для работы автотюнера
 
 	/* что за память настроек и частот используется в контроллере */
 	//#define NVRAM_TYPE NVRAM_TYPE_FM25XXXX	// SERIAL FRAM AUTODETECT

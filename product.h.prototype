@@ -344,8 +344,10 @@
 	#include "boards/arm_stm32f4xx_tqfp144_cpustyle_32F429DISCO.h"	/* плата STM32F429I-DISCO с процессором STM32F429ZIT6	*/
 #elif CPUSTYLE_STM32F && CTLSTYLE_V2D
 	#include "boards/arm_stm32fxxx_tqfp100_ctlstyle_v8c.h"	/* плата STM32F4DISCOVERY с процессором STM32F407VGT6	*/
+	//#include "boards/arm_stm32fxxx_tqfp100_ctlstyle_v8c_407z.h"	/* плата STM32F4XX с процессором STM32F407ZET6	*/
 	#include "paramdepend.h"				/* проверка зависимостей параметров конфигурации */
 	#include "boards/arm_stm32fxxx_tqfp100_cpustyle_v8c.h"	/* плата STM32F4DISCOVERY с процессором STM32F407VGT6	*/
+	//#include "boards/arm_stm32fxxx_tqfp100_cpustyle_v8c_407z.h"	/* плата STM32F4XX с процессором STM32F407ZET6	*/
 #elif CPUSTYLE_STM32F && CTLSTYLE_V3D
 	#include "boards/arm_stm32f4xx_tqfp144_ctlstyle_32F746G.h"	/* Плата STM32F746G-DISCO с процессором STM32F746NGH6	*/
 	#include "paramdepend.h"				/* проверка зависимостей параметров конфигурации */

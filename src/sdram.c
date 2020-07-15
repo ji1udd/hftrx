@@ -70,6 +70,146 @@ void sdram_test_random(uint_fast32_t addr, uint_fast16_t buffer_size)
 
 #if CPUSTYLE_STM32F
 
+#if defined CTLSTYLE_V1D || defined CTLSTYLE_V3D	// динамическая память
+
+/**
+  * @brief  Configures all SDRAM memory I/Os pins.
+  * @param  None.
+  * @retval None.
+  */
+void SDRAM_GPIOConfig(void)
+{
+#if defined CTLSTYLE_V1D	/* Плата STM32F429I-DISCO с процессором STM32F429ZIT6	*/
+
+/*-- GPIOs Configuration -----------------------------------------------------*/
+/*
+ +-------------------+--------------------+--------------------+--------------------+
+ +                       SDRAM pins assignment                                      +
+ +-------------------+--------------------+--------------------+--------------------+
+ | PD0  <-> FMC_D2   | PE0  <-> FMC_NBL0  | PF0  <-> FMC_A0    | PG0  <-> FMC_A10   |
+ | PD1  <-> FMC_D3   | PE1  <-> FMC_NBL1  | PF1  <-> FMC_A1    | PG1  <-> FMC_A11   |
+ | PD8  <-> FMC_D13  | PE7  <-> FMC_D4    | PF2  <-> FMC_A2    | PG8  <-> FMC_SDCLK |
+ | PD9  <-> FMC_D14  | PE8  <-> FMC_D5    | PF3  <-> FMC_A3    | PG15 <-> FMC_NCAS  |
+ | PD10 <-> FMC_D15  | PE9  <-> FMC_D6    | PF4  <-> FMC_A4    |--------------------+
+ | PD14 <-> FMC_D0   | PE10 <-> FMC_D7    | PF5  <-> FMC_A5    |
+ | PD15 <-> FMC_D1   | PE11 <-> FMC_D8    | PF11 <-> FMC_NRAS  |
+ +-------------------| PE12 <-> FMC_D9    | PF12 <-> FMC_A6    |
+                     | PE13 <-> FMC_D10   | PF13 <-> FMC_A7    |
+                     | PE14 <-> FMC_D11   | PF14 <-> FMC_A8    |
+                     | PE15 <-> FMC_D12   | PF15 <-> FMC_A9    |
+ +-------------------+--------------------+--------------------+
+ | PB5 <-> FMC_SDCKE1|
+ | PB6 <-> FMC_SDNE1 |
+ | PC0 <-> FMC_SDNWE |
+ +-------------------+
+
+*/
+  enum { GPIO_AF_FMC = 12 };
+
+  arm_hardware_piob_altfn50((1U << 5), GPIO_AF_FMC);
+  arm_hardware_piob_altfn50((1U << 6), GPIO_AF_FMC);
+  arm_hardware_pioc_altfn50((1U << 0), GPIO_AF_FMC);
+  arm_hardware_piod_altfn50((1U << 0), GPIO_AF_FMC);
+  arm_hardware_piod_altfn50((1U << 1), GPIO_AF_FMC);
+  arm_hardware_piod_altfn50((1U << 8), GPIO_AF_FMC);
+  arm_hardware_piod_altfn50((1U << 9), GPIO_AF_FMC);
+  arm_hardware_piod_altfn50((1U << 10), GPIO_AF_FMC);
+  arm_hardware_piod_altfn50((1U << 14), GPIO_AF_FMC);
+  arm_hardware_piod_altfn50((1U << 15), GPIO_AF_FMC);
+  arm_hardware_pioe_altfn50((1U << 0), GPIO_AF_FMC);
+  arm_hardware_pioe_altfn50((1U << 1), GPIO_AF_FMC);
+  arm_hardware_pioe_altfn50((1U << 7), GPIO_AF_FMC);
+  arm_hardware_pioe_altfn50((1U << 8), GPIO_AF_FMC);
+  arm_hardware_pioe_altfn50((1U << 9), GPIO_AF_FMC);
+  arm_hardware_pioe_altfn50((1U << 10), GPIO_AF_FMC);
+  arm_hardware_pioe_altfn50((1U << 11), GPIO_AF_FMC);
+  arm_hardware_pioe_altfn50((1U << 12), GPIO_AF_FMC);
+  arm_hardware_pioe_altfn50((1U << 13), GPIO_AF_FMC);
+  arm_hardware_pioe_altfn50((1U << 14), GPIO_AF_FMC);
+  arm_hardware_pioe_altfn50((1U << 15), GPIO_AF_FMC);
+  arm_hardware_piof_altfn50((1U << 0), GPIO_AF_FMC);
+  arm_hardware_piof_altfn50((1U << 1), GPIO_AF_FMC);
+  arm_hardware_piof_altfn50((1U << 2), GPIO_AF_FMC);
+  arm_hardware_piof_altfn50((1U << 3), GPIO_AF_FMC);
+  arm_hardware_piof_altfn50((1U << 4), GPIO_AF_FMC);
+  arm_hardware_piof_altfn50((1U << 5), GPIO_AF_FMC);
+  arm_hardware_piof_altfn50((1U << 11), GPIO_AF_FMC);
+  arm_hardware_piof_altfn50((1U << 12), GPIO_AF_FMC);
+  arm_hardware_piof_altfn50((1U << 13), GPIO_AF_FMC);
+  arm_hardware_piof_altfn50((1U << 14), GPIO_AF_FMC);
+  arm_hardware_piof_altfn50((1U << 15), GPIO_AF_FMC);
+  arm_hardware_piog_altfn50((1U << 0), GPIO_AF_FMC);
+  arm_hardware_piog_altfn50((1U << 1), GPIO_AF_FMC);
+  arm_hardware_piog_altfn50((1U << 4), GPIO_AF_FMC);
+  arm_hardware_piog_altfn50((1U << 5), GPIO_AF_FMC);
+  arm_hardware_piog_altfn50((1U << 8), GPIO_AF_FMC);
+  arm_hardware_piog_altfn50((1U << 15), GPIO_AF_FMC);
+
+#elif defined CTLSTYLE_V3D	/* Плата STM32F746G-DISCO с процессором STM32F746NGH6	*/
+
+  /*
+   D0 -> PD14*		A0 -> PF0*		SDNWE  -> PH5*
+   D1 -> PD15*		A1 -> PF1*		SDNRAS -> PF11*
+   D2 -> PD0*		A2 -> PF2*		SDNCAS -> PG15*
+   D3 -> PD1*		A3 -> PF3*		SDCLK  -> PG8*
+   D4 -> PE7*		A4 -> PF4*		BA0	   -> PG4*
+   D5 -> PE8*		A5 -> PF5*		BA1	   -> PG5*
+   D6 -> PE9*		A6 -> PF12*		SDNE0  -> PH3*
+   D7 -> PE10*		A7 -> PF13*		SDCKE0 -> PC3*
+   D8 -> PE11*		A8 -> PF14*		NBL0   -> PE0*
+   D9 -> PE12*		A9 -> PF15*		NBL1   -> PE1*
+   D10 -> PE13*		A10 -> PG0*
+   D11 -> PE14*		A11 -> PG1*
+   D12 -> PE15*
+   D13 -> PD8*
+   D14 -> PD9*
+   D15 -> PD10*
+  */
+
+	enum { GPIO_AF_FMC = 12 };
+
+	arm_hardware_pioc_altfn50((1U << 3), GPIO_AF_FMC);
+	arm_hardware_piod_altfn50((1U << 14), GPIO_AF_FMC);
+	arm_hardware_piod_altfn50((1U << 15), GPIO_AF_FMC);
+	arm_hardware_piod_altfn50((1U << 0), GPIO_AF_FMC);
+	arm_hardware_piod_altfn50((1U << 1), GPIO_AF_FMC);
+	arm_hardware_piod_altfn50((1U << 8), GPIO_AF_FMC);
+	arm_hardware_piod_altfn50((1U << 9), GPIO_AF_FMC);
+	arm_hardware_piod_altfn50((1U << 10), GPIO_AF_FMC);
+	arm_hardware_pioe_altfn50((1U << 7), GPIO_AF_FMC);
+	arm_hardware_pioe_altfn50((1U << 8), GPIO_AF_FMC);
+	arm_hardware_pioe_altfn50((1U << 9), GPIO_AF_FMC);
+	arm_hardware_pioe_altfn50((1U << 10), GPIO_AF_FMC);
+	arm_hardware_pioe_altfn50((1U << 11), GPIO_AF_FMC);
+	arm_hardware_pioe_altfn50((1U << 12), GPIO_AF_FMC);
+	arm_hardware_pioe_altfn50((1U << 13), GPIO_AF_FMC);
+	arm_hardware_pioe_altfn50((1U << 14), GPIO_AF_FMC);
+	arm_hardware_pioe_altfn50((1U << 15), GPIO_AF_FMC);
+	arm_hardware_pioe_altfn50((1U << 0), GPIO_AF_FMC);
+	arm_hardware_pioe_altfn50((1U << 1), GPIO_AF_FMC);
+	arm_hardware_piof_altfn50((1U << 0), GPIO_AF_FMC);
+	arm_hardware_piof_altfn50((1U << 1), GPIO_AF_FMC);
+	arm_hardware_piof_altfn50((1U << 2), GPIO_AF_FMC);
+	arm_hardware_piof_altfn50((1U << 3), GPIO_AF_FMC);
+	arm_hardware_piof_altfn50((1U << 4), GPIO_AF_FMC);
+	arm_hardware_piof_altfn50((1U << 5), GPIO_AF_FMC);
+	arm_hardware_piof_altfn50((1U << 12), GPIO_AF_FMC);
+	arm_hardware_piof_altfn50((1U << 13), GPIO_AF_FMC);
+	arm_hardware_piof_altfn50((1U << 14), GPIO_AF_FMC);
+	arm_hardware_piof_altfn50((1U << 15), GPIO_AF_FMC);
+	arm_hardware_piof_altfn50((1U << 11), GPIO_AF_FMC);
+	arm_hardware_piog_altfn50((1U << 0), GPIO_AF_FMC);
+	arm_hardware_piog_altfn50((1U << 1), GPIO_AF_FMC);
+	arm_hardware_piog_altfn50((1U << 15), GPIO_AF_FMC);
+	arm_hardware_piog_altfn50((1U << 8), GPIO_AF_FMC);
+	arm_hardware_piog_altfn50((1U << 4), GPIO_AF_FMC);
+	arm_hardware_piog_altfn50((1U << 5), GPIO_AF_FMC);
+	arm_hardware_pioh_altfn50((1U << 3), GPIO_AF_FMC);
+	arm_hardware_pioh_altfn50((1U << 5), GPIO_AF_FMC);
+
+#endif
+}
+
 void FMC_SDRAMInit(FMC_SDRAMInitTypeDef* FMC_SDRAMInitStruct)
 { 
   /* temporary registers */
@@ -208,144 +348,6 @@ void FMC_SDRAMCmdConfig(FMC_SDRAMCommandTypeDef* FMC_SDRAMCommandStruct)
   
   FMC_Bank5_6->SDCMR = tmpr;
 
-}
-
-/**
-  * @brief  Configures all SDRAM memory I/Os pins. 
-  * @param  None. 
-  * @retval None.
-  */
-void SDRAM_GPIOConfig(void)
-{
-#if defined CTLSTYLE_V1D	/* Плата STM32F429I-DISCO с процессором STM32F429ZIT6	*/
-                            
-/*-- GPIOs Configuration -----------------------------------------------------*/
-/*
- +-------------------+--------------------+--------------------+--------------------+
- +                       SDRAM pins assignment                                      +
- +-------------------+--------------------+--------------------+--------------------+
- | PD0  <-> FMC_D2   | PE0  <-> FMC_NBL0  | PF0  <-> FMC_A0    | PG0  <-> FMC_A10   |
- | PD1  <-> FMC_D3   | PE1  <-> FMC_NBL1  | PF1  <-> FMC_A1    | PG1  <-> FMC_A11   |
- | PD8  <-> FMC_D13  | PE7  <-> FMC_D4    | PF2  <-> FMC_A2    | PG8  <-> FMC_SDCLK |
- | PD9  <-> FMC_D14  | PE8  <-> FMC_D5    | PF3  <-> FMC_A3    | PG15 <-> FMC_NCAS  |
- | PD10 <-> FMC_D15  | PE9  <-> FMC_D6    | PF4  <-> FMC_A4    |--------------------+ 
- | PD14 <-> FMC_D0   | PE10 <-> FMC_D7    | PF5  <-> FMC_A5    |   
- | PD15 <-> FMC_D1   | PE11 <-> FMC_D8    | PF11 <-> FMC_NRAS  | 
- +-------------------| PE12 <-> FMC_D9    | PF12 <-> FMC_A6    | 
-                     | PE13 <-> FMC_D10   | PF13 <-> FMC_A7    |    
-                     | PE14 <-> FMC_D11   | PF14 <-> FMC_A8    |
-                     | PE15 <-> FMC_D12   | PF15 <-> FMC_A9    |
- +-------------------+--------------------+--------------------+
- | PB5 <-> FMC_SDCKE1| 
- | PB6 <-> FMC_SDNE1 | 
- | PC0 <-> FMC_SDNWE |
- +-------------------+  
-  
-*/
-  enum { GPIO_AF_FMC = 12 };
-
-  arm_hardware_piob_altfn50((1U << 5), GPIO_AF_FMC);
-  arm_hardware_piob_altfn50((1U << 6), GPIO_AF_FMC);
-  arm_hardware_pioc_altfn50((1U << 0), GPIO_AF_FMC);
-  arm_hardware_piod_altfn50((1U << 0), GPIO_AF_FMC);
-  arm_hardware_piod_altfn50((1U << 1), GPIO_AF_FMC);
-  arm_hardware_piod_altfn50((1U << 8), GPIO_AF_FMC);
-  arm_hardware_piod_altfn50((1U << 9), GPIO_AF_FMC);
-  arm_hardware_piod_altfn50((1U << 10), GPIO_AF_FMC);
-  arm_hardware_piod_altfn50((1U << 14), GPIO_AF_FMC);
-  arm_hardware_piod_altfn50((1U << 15), GPIO_AF_FMC);
-  arm_hardware_pioe_altfn50((1U << 0), GPIO_AF_FMC);
-  arm_hardware_pioe_altfn50((1U << 1), GPIO_AF_FMC);
-  arm_hardware_pioe_altfn50((1U << 7), GPIO_AF_FMC);
-  arm_hardware_pioe_altfn50((1U << 8), GPIO_AF_FMC);
-  arm_hardware_pioe_altfn50((1U << 9), GPIO_AF_FMC);
-  arm_hardware_pioe_altfn50((1U << 10), GPIO_AF_FMC);
-  arm_hardware_pioe_altfn50((1U << 11), GPIO_AF_FMC);
-  arm_hardware_pioe_altfn50((1U << 12), GPIO_AF_FMC);
-  arm_hardware_pioe_altfn50((1U << 13), GPIO_AF_FMC);
-  arm_hardware_pioe_altfn50((1U << 14), GPIO_AF_FMC);
-  arm_hardware_pioe_altfn50((1U << 15), GPIO_AF_FMC);
-  arm_hardware_piof_altfn50((1U << 0), GPIO_AF_FMC);
-  arm_hardware_piof_altfn50((1U << 1), GPIO_AF_FMC);
-  arm_hardware_piof_altfn50((1U << 2), GPIO_AF_FMC);
-  arm_hardware_piof_altfn50((1U << 3), GPIO_AF_FMC);
-  arm_hardware_piof_altfn50((1U << 4), GPIO_AF_FMC);
-  arm_hardware_piof_altfn50((1U << 5), GPIO_AF_FMC);
-  arm_hardware_piof_altfn50((1U << 11), GPIO_AF_FMC);
-  arm_hardware_piof_altfn50((1U << 12), GPIO_AF_FMC);
-  arm_hardware_piof_altfn50((1U << 13), GPIO_AF_FMC);
-  arm_hardware_piof_altfn50((1U << 14), GPIO_AF_FMC);
-  arm_hardware_piof_altfn50((1U << 15), GPIO_AF_FMC);
-  arm_hardware_piog_altfn50((1U << 0), GPIO_AF_FMC);
-  arm_hardware_piog_altfn50((1U << 1), GPIO_AF_FMC);
-  arm_hardware_piog_altfn50((1U << 4), GPIO_AF_FMC);
-  arm_hardware_piog_altfn50((1U << 5), GPIO_AF_FMC);
-  arm_hardware_piog_altfn50((1U << 8), GPIO_AF_FMC);
-  arm_hardware_piog_altfn50((1U << 15), GPIO_AF_FMC);
-
-#elif defined CTLSTYLE_V3D	/* Плата STM32F746G-DISCO с процессором STM32F746NGH6	*/
-
-  /*
-   D0 -> PD14*		A0 -> PF0*		SDNWE  -> PH5*
-   D1 -> PD15*		A1 -> PF1*		SDNRAS -> PF11*
-   D2 -> PD0*		A2 -> PF2*		SDNCAS -> PG15*
-   D3 -> PD1*		A3 -> PF3*		SDCLK  -> PG8*
-   D4 -> PE7*		A4 -> PF4*		BA0	   -> PG4*
-   D5 -> PE8*		A5 -> PF5*		BA1	   -> PG5*
-   D6 -> PE9*		A6 -> PF12*		SDNE0  -> PH3*
-   D7 -> PE10*		A7 -> PF13*		SDCKE0 -> PC3*
-   D8 -> PE11*		A8 -> PF14*		NBL0   -> PE0*
-   D9 -> PE12*		A9 -> PF15*		NBL1   -> PE1*
-   D10 -> PE13*		A10 -> PG0*
-   D11 -> PE14*		A11 -> PG1*
-   D12 -> PE15*
-   D13 -> PD8*
-   D14 -> PD9*
-   D15 -> PD10*
-  */
-
-	enum { GPIO_AF_FMC = 12 };
-
-	arm_hardware_pioc_altfn50((1U << 3), GPIO_AF_FMC);
-	arm_hardware_piod_altfn50((1U << 14), GPIO_AF_FMC);
-	arm_hardware_piod_altfn50((1U << 15), GPIO_AF_FMC);
-	arm_hardware_piod_altfn50((1U << 0), GPIO_AF_FMC);
-	arm_hardware_piod_altfn50((1U << 1), GPIO_AF_FMC);
-	arm_hardware_piod_altfn50((1U << 8), GPIO_AF_FMC);
-	arm_hardware_piod_altfn50((1U << 9), GPIO_AF_FMC);
-	arm_hardware_piod_altfn50((1U << 10), GPIO_AF_FMC);
-	arm_hardware_pioe_altfn50((1U << 7), GPIO_AF_FMC);
-	arm_hardware_pioe_altfn50((1U << 8), GPIO_AF_FMC);
-	arm_hardware_pioe_altfn50((1U << 9), GPIO_AF_FMC);
-	arm_hardware_pioe_altfn50((1U << 10), GPIO_AF_FMC);
-	arm_hardware_pioe_altfn50((1U << 11), GPIO_AF_FMC);
-	arm_hardware_pioe_altfn50((1U << 12), GPIO_AF_FMC);
-	arm_hardware_pioe_altfn50((1U << 13), GPIO_AF_FMC);
-	arm_hardware_pioe_altfn50((1U << 14), GPIO_AF_FMC);
-	arm_hardware_pioe_altfn50((1U << 15), GPIO_AF_FMC);
-	arm_hardware_pioe_altfn50((1U << 0), GPIO_AF_FMC);
-	arm_hardware_pioe_altfn50((1U << 1), GPIO_AF_FMC);
-	arm_hardware_piof_altfn50((1U << 0), GPIO_AF_FMC);
-	arm_hardware_piof_altfn50((1U << 1), GPIO_AF_FMC);
-	arm_hardware_piof_altfn50((1U << 2), GPIO_AF_FMC);
-	arm_hardware_piof_altfn50((1U << 3), GPIO_AF_FMC);
-	arm_hardware_piof_altfn50((1U << 4), GPIO_AF_FMC);
-	arm_hardware_piof_altfn50((1U << 5), GPIO_AF_FMC);
-	arm_hardware_piof_altfn50((1U << 12), GPIO_AF_FMC);
-	arm_hardware_piof_altfn50((1U << 13), GPIO_AF_FMC);
-	arm_hardware_piof_altfn50((1U << 14), GPIO_AF_FMC);
-	arm_hardware_piof_altfn50((1U << 15), GPIO_AF_FMC);
-	arm_hardware_piof_altfn50((1U << 11), GPIO_AF_FMC);
-	arm_hardware_piog_altfn50((1U << 0), GPIO_AF_FMC);
-	arm_hardware_piog_altfn50((1U << 1), GPIO_AF_FMC);
-	arm_hardware_piog_altfn50((1U << 15), GPIO_AF_FMC);
-	arm_hardware_piog_altfn50((1U << 8), GPIO_AF_FMC);
-	arm_hardware_piog_altfn50((1U << 4), GPIO_AF_FMC);
-	arm_hardware_piog_altfn50((1U << 5), GPIO_AF_FMC);
-	arm_hardware_pioh_altfn50((1U << 3), GPIO_AF_FMC);
-	arm_hardware_pioh_altfn50((1U << 5), GPIO_AF_FMC);
-
-#endif
 }
 
 void FMC_SetRefreshCount(uint32_t FMC_Count)
@@ -487,6 +489,7 @@ void SDRAM_InitSequence(void)
   while(FMC_GetFlagStatus(FMC_Bank2_SDRAM, FMC_FLAG_Busy) != RESET)
   {
   }
+
 #elif defined CTLSTYLE_V3D	/* Плата STM32F746G-DISCO с процессором STM32F746NGH6	*/
 	FMC_SDRAMCommandStructure.FMC_CommandMode = FMC_Command_Mode_CLK_Enabled;
 	FMC_SDRAMCommandStructure.FMC_CommandTarget = FMC_Command_Target_bank1;
@@ -549,6 +552,207 @@ void SDRAM_InitSequence(void)
 #endif
 }
 
+#elif defined CTLSTYLE_V2D	// статическая память
+
+#define SDRAM_ADDR			0x68000000uL
+#define SDRAM_SIZE			0x100000uL
+
+void FSMC_NORSRAMInit(FSMC_NORSRAMInitTypeDef* FSMC_NORSRAMInitStruct)
+{
+  /* Check the parameters */
+  assert_param(IS_FSMC_NORSRAM_BANK(FSMC_NORSRAMInitStruct->FSMC_Bank));
+  assert_param(IS_FSMC_MUX(FSMC_NORSRAMInitStruct->FSMC_DataAddressMux));
+  assert_param(IS_FSMC_MEMORY(FSMC_NORSRAMInitStruct->FSMC_MemoryType));
+  assert_param(IS_FSMC_MEMORY_WIDTH(FSMC_NORSRAMInitStruct->FSMC_MemoryDataWidth));
+  assert_param(IS_FSMC_BURSTMODE(FSMC_NORSRAMInitStruct->FSMC_BurstAccessMode));
+  assert_param(IS_FSMC_ASYNWAIT(FSMC_NORSRAMInitStruct->FSMC_AsynchronousWait));
+  assert_param(IS_FSMC_WAIT_POLARITY(FSMC_NORSRAMInitStruct->FSMC_WaitSignalPolarity));
+  assert_param(IS_FSMC_WRAP_MODE(FSMC_NORSRAMInitStruct->FSMC_WrapMode));
+  assert_param(IS_FSMC_WAIT_SIGNAL_ACTIVE(FSMC_NORSRAMInitStruct->FSMC_WaitSignalActive));
+  assert_param(IS_FSMC_WRITE_OPERATION(FSMC_NORSRAMInitStruct->FSMC_WriteOperation));
+  assert_param(IS_FSMC_WAITE_SIGNAL(FSMC_NORSRAMInitStruct->FSMC_WaitSignal));
+  assert_param(IS_FSMC_EXTENDED_MODE(FSMC_NORSRAMInitStruct->FSMC_ExtendedMode));
+  assert_param(IS_FSMC_WRITE_BURST(FSMC_NORSRAMInitStruct->FSMC_WriteBurst));
+  assert_param(IS_FSMC_ADDRESS_SETUP_TIME(FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_AddressSetupTime));
+  assert_param(IS_FSMC_ADDRESS_HOLD_TIME(FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_AddressHoldTime));
+  assert_param(IS_FSMC_DATASETUP_TIME(FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_DataSetupTime));
+  assert_param(IS_FSMC_TURNAROUND_TIME(FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_BusTurnAroundDuration));
+  assert_param(IS_FSMC_CLK_DIV(FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_CLKDivision));
+  assert_param(IS_FSMC_DATA_LATENCY(FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_DataLatency));
+  assert_param(IS_FSMC_ACCESS_MODE(FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_AccessMode));
+
+  /* Bank1 NOR/SRAM control register configuration */
+  FSMC_Bank1->BTCR[FSMC_NORSRAMInitStruct->FSMC_Bank] =
+            (uint32_t)FSMC_NORSRAMInitStruct->FSMC_DataAddressMux |
+            FSMC_NORSRAMInitStruct->FSMC_MemoryType |
+            FSMC_NORSRAMInitStruct->FSMC_MemoryDataWidth |
+            FSMC_NORSRAMInitStruct->FSMC_BurstAccessMode |
+            FSMC_NORSRAMInitStruct->FSMC_AsynchronousWait |
+            FSMC_NORSRAMInitStruct->FSMC_WaitSignalPolarity |
+            FSMC_NORSRAMInitStruct->FSMC_WrapMode |
+            FSMC_NORSRAMInitStruct->FSMC_WaitSignalActive |
+            FSMC_NORSRAMInitStruct->FSMC_WriteOperation |
+            FSMC_NORSRAMInitStruct->FSMC_WaitSignal |
+            FSMC_NORSRAMInitStruct->FSMC_ExtendedMode |
+            FSMC_NORSRAMInitStruct->FSMC_WriteBurst;
+  if(FSMC_NORSRAMInitStruct->FSMC_MemoryType == FSMC_MemoryType_NOR)
+  {
+    FSMC_Bank1->BTCR[FSMC_NORSRAMInitStruct->FSMC_Bank] |= (uint32_t)BCR_FACCEN_SET;
+  }
+  /* Bank1 NOR/SRAM timing register configuration */
+  FSMC_Bank1->BTCR[FSMC_NORSRAMInitStruct->FSMC_Bank+1] =
+            (uint32_t)FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_AddressSetupTime |
+            (FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_AddressHoldTime << 4) |
+            (FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_DataSetupTime << 8) |
+            (FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_BusTurnAroundDuration << 16) |
+            (FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_CLKDivision << 20) |
+            (FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_DataLatency << 24) |
+             FSMC_NORSRAMInitStruct->FSMC_ReadWriteTimingStruct->FSMC_AccessMode;
+
+
+  /* Bank1 NOR/SRAM timing register for write configuration, if extended mode is used */
+  if(FSMC_NORSRAMInitStruct->FSMC_ExtendedMode == FSMC_ExtendedMode_Enable)
+  {
+    assert_param(IS_FSMC_ADDRESS_SETUP_TIME(FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_AddressSetupTime));
+    assert_param(IS_FSMC_ADDRESS_HOLD_TIME(FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_AddressHoldTime));
+    assert_param(IS_FSMC_DATASETUP_TIME(FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_DataSetupTime));
+    assert_param(IS_FSMC_CLK_DIV(FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_CLKDivision));
+    assert_param(IS_FSMC_DATA_LATENCY(FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_DataLatency));
+    assert_param(IS_FSMC_ACCESS_MODE(FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_AccessMode));
+    FSMC_Bank1E->BWTR[FSMC_NORSRAMInitStruct->FSMC_Bank] =
+              (uint32_t)FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_AddressSetupTime |
+              (FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_AddressHoldTime << 4 )|
+              (FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_DataSetupTime << 8) |
+              (FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_CLKDivision << 20) |
+              (FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_DataLatency << 24) |
+               FSMC_NORSRAMInitStruct->FSMC_WriteTimingStruct->FSMC_AccessMode;
+  }
+  else
+  {
+    FSMC_Bank1E->BWTR[FSMC_NORSRAMInitStruct->FSMC_Bank] = 0x0FFFFFFF;
+  }
+}
+
+void FSMC_NORSRAMCmd(uint32_t FSMC_Bank, FunctionalState NewState)
+{
+  assert_param(IS_FSMC_NORSRAM_BANK(FSMC_Bank));
+  assert_param(IS_FUNCTIONAL_STATE(NewState));
+
+  if (NewState != DISABLE)
+  {
+    /* Enable the selected NOR/SRAM Bank by setting the PBKEN bit in the BCRx register */
+    FSMC_Bank1->BTCR[FSMC_Bank] |= BCR_MBKEN_SET;
+  }
+  else
+  {
+    /* Disable the selected NOR/SRAM Bank by clearing the PBKEN bit in the BCRx register */
+    FSMC_Bank1->BTCR[FSMC_Bank] &= BCR_MBKEN_RESET;
+  }
+}
+
+void FSMC_SRAM_GPIOConfig(void)
+{
+	RCC->AHB3ENR |= RCC_AHB3ENR_FSMCEN;	/* FSMC clock enable */
+	__DSB();
+
+	/*
+		D0 -> PD14*		A0 -> PF0*		NWE		-> PD5*
+		D1 -> PD15*		A1 -> PF1*		NE3		-> PG10*
+		D2 -> PD0*		A2 -> PF2*		NOE		-> PD4*
+		D3 -> PD1*		A3 -> PF3*		NBL0	-> PE0*
+		D4 -> PE7*		A4 -> PF4*		NBL1	-> PE1*
+		D5 -> PE8*		A5 -> PF5*
+		D6 -> PE9*		A6 -> PF12*
+		D7 -> PE10*		A7 -> PF13*
+		D8 -> PE11*		A8 -> PF14*
+		D9 -> PE12*		A9 -> PF15*
+		D10 -> PE13*	A10 -> PG0*
+		D11 -> PE14*	A11 -> PG1*
+		D12 -> PE15*	A12 -> PG2*
+		D13 -> PD8*		A13 -> PG3*
+		D14 -> PD9*		A14 -> PG4*
+		D15 -> PD10*	A15 -> PG5*
+						A16 -> PD11*
+						A17 -> PD12*
+						A18 -> PD13*
+		*/
+		enum { GPIO_AF_FSMC = 12 };
+
+		arm_hardware_piod_altfn50((1U << 14), GPIO_AF_FSMC);
+		arm_hardware_piod_altfn50((1U << 15), GPIO_AF_FSMC);
+		arm_hardware_piod_altfn50((1U << 0), GPIO_AF_FSMC);
+		arm_hardware_piod_altfn50((1U << 1), GPIO_AF_FSMC);
+		arm_hardware_piod_altfn50((1U << 8), GPIO_AF_FSMC);
+		arm_hardware_piod_altfn50((1U << 9), GPIO_AF_FSMC);
+		arm_hardware_piod_altfn50((1U << 10), GPIO_AF_FSMC);
+		arm_hardware_piod_altfn50((1U << 4), GPIO_AF_FSMC);
+		arm_hardware_piod_altfn50((1U << 5), GPIO_AF_FSMC);
+		arm_hardware_pioe_altfn50((1U << 7), GPIO_AF_FSMC);
+		arm_hardware_pioe_altfn50((1U << 8), GPIO_AF_FSMC);
+		arm_hardware_pioe_altfn50((1U << 9), GPIO_AF_FSMC);
+		arm_hardware_pioe_altfn50((1U << 10), GPIO_AF_FSMC);
+		arm_hardware_pioe_altfn50((1U << 11), GPIO_AF_FSMC);
+		arm_hardware_pioe_altfn50((1U << 12), GPIO_AF_FSMC);
+		arm_hardware_pioe_altfn50((1U << 13), GPIO_AF_FSMC);
+		arm_hardware_pioe_altfn50((1U << 14), GPIO_AF_FSMC);
+		arm_hardware_pioe_altfn50((1U << 15), GPIO_AF_FSMC);
+		arm_hardware_pioe_altfn50((1U << 0), GPIO_AF_FSMC);
+		arm_hardware_pioe_altfn50((1U << 1), GPIO_AF_FSMC);
+		arm_hardware_piof_altfn50((1U << 0), GPIO_AF_FSMC);
+		arm_hardware_piof_altfn50((1U << 1), GPIO_AF_FSMC);
+		arm_hardware_piof_altfn50((1U << 2), GPIO_AF_FSMC);
+		arm_hardware_piof_altfn50((1U << 3), GPIO_AF_FSMC);
+		arm_hardware_piof_altfn50((1U << 4), GPIO_AF_FSMC);
+		arm_hardware_piof_altfn50((1U << 5), GPIO_AF_FSMC);
+		arm_hardware_piof_altfn50((1U << 12), GPIO_AF_FSMC);
+		arm_hardware_piof_altfn50((1U << 13), GPIO_AF_FSMC);
+		arm_hardware_piof_altfn50((1U << 14), GPIO_AF_FSMC);
+		arm_hardware_piof_altfn50((1U << 15), GPIO_AF_FSMC);
+		arm_hardware_piog_altfn50((1U << 0), GPIO_AF_FSMC);
+		arm_hardware_piog_altfn50((1U << 1), GPIO_AF_FSMC);
+		arm_hardware_piog_altfn50((1U << 2), GPIO_AF_FSMC);
+		arm_hardware_piog_altfn50((1U << 3), GPIO_AF_FSMC);
+		arm_hardware_piog_altfn50((1U << 10), GPIO_AF_FSMC);
+		arm_hardware_piog_altfn50((1U << 4), GPIO_AF_FSMC);
+		arm_hardware_piog_altfn50((1U << 5), GPIO_AF_FSMC);
+}
+
+void FSMC_SRAM_Init(void)
+{
+
+	FSMC_NORSRAMInitTypeDef  		FSMC_NORSRAMInitStructure;
+	FSMC_NORSRAMTimingInitTypeDef  	readWriteTiming;
+
+	readWriteTiming.FSMC_AddressSetupTime = 0x0F;
+	readWriteTiming.FSMC_AddressHoldTime = 0x00;
+	readWriteTiming.FSMC_DataSetupTime = 0x0F;
+	readWriteTiming.FSMC_BusTurnAroundDuration = 0x00;
+	readWriteTiming.FSMC_CLKDivision = 0x00;
+	readWriteTiming.FSMC_DataLatency = 0x00;
+	readWriteTiming.FSMC_AccessMode = FSMC_AccessMode_A;
+
+	FSMC_NORSRAMInitStructure.FSMC_Bank = FSMC_Bank1_NORSRAM3;
+	FSMC_NORSRAMInitStructure.FSMC_DataAddressMux = FSMC_DataAddressMux_Disable;
+	FSMC_NORSRAMInitStructure.FSMC_MemoryType =FSMC_MemoryType_SRAM;
+	FSMC_NORSRAMInitStructure.FSMC_MemoryDataWidth = FSMC_MemoryDataWidth_16b;
+	FSMC_NORSRAMInitStructure.FSMC_BurstAccessMode =FSMC_BurstAccessMode_Disable;
+	FSMC_NORSRAMInitStructure.FSMC_WaitSignalPolarity = FSMC_WaitSignalPolarity_Low;
+	FSMC_NORSRAMInitStructure.FSMC_AsynchronousWait=FSMC_AsynchronousWait_Disable;
+	FSMC_NORSRAMInitStructure.FSMC_WrapMode = FSMC_WrapMode_Disable;
+	FSMC_NORSRAMInitStructure.FSMC_WaitSignalActive = FSMC_WaitSignalActive_BeforeWaitState;
+	FSMC_NORSRAMInitStructure.FSMC_WriteOperation = FSMC_WriteOperation_Enable;
+	FSMC_NORSRAMInitStructure.FSMC_WaitSignal = FSMC_WaitSignal_Disable;
+	FSMC_NORSRAMInitStructure.FSMC_ExtendedMode = FSMC_ExtendedMode_Disable;
+	FSMC_NORSRAMInitStructure.FSMC_WriteBurst = FSMC_WriteBurst_Disable;
+	FSMC_NORSRAMInitStructure.FSMC_ReadWriteTimingStruct = &readWriteTiming;
+	FSMC_NORSRAMInitStructure.FSMC_WriteTimingStruct = &readWriteTiming;
+
+	FSMC_NORSRAMInit(&FSMC_NORSRAMInitStructure);
+	FSMC_NORSRAMCmd(FSMC_Bank1_NORSRAM3, ENABLE);
+}
+
+#endif
+
 /**
   * @brief  Configures the FMC and GPIOs to interface with the SDRAM memory.
   *         This function must be called before any read/write operation
@@ -560,13 +764,16 @@ void SDRAM_InitSequence(void)
   */
 void arm_hardware_sdram_initialize(void)
 {
-  FMC_SDRAMInitTypeDef  FMC_SDRAMInitStructure;
+
+
+#if defined CTLSTYLE_V1D	/* Плата STM32F429I-DISCO с процессором STM32F429ZIT6	*/
+
+	FMC_SDRAMInitTypeDef  FMC_SDRAMInitStructure;
   FMC_SDRAMTimingInitTypeDef  FMC_SDRAMTimingInitStructure; 
   
   /* GPIO configuration for FMC SDRAM bank */
   SDRAM_GPIOConfig();
-  
-#if defined CTLSTYLE_V1D	/* Плата STM32F429I-DISCO с процессором STM32F429ZIT6	*/
+
   /* Enable FMC clock */
   //RCC_AHB3PeriphClockCmd(RCC_AHB3Periph_FMC, ENABLE);
   
@@ -606,7 +813,24 @@ void arm_hardware_sdram_initialize(void)
   FMC_SDRAMInitStructure.FMC_ReadPipeDelay = FMC_ReadPipe_Delay_1;
   FMC_SDRAMInitStructure.FMC_SDRAMTimingStruct = &FMC_SDRAMTimingInitStructure;
   
+	/* FMC SDRAM bank initialization */
+	FMC_SDRAMInit(&FMC_SDRAMInitStructure);
+
+	/* FMC SDRAM device initialization sequence */
+	SDRAM_InitSequence();
+
+#elif defined CTLSTYLE_V2D	/* плата STM32F4XX с процессором STM32F407ZET6	*/
+
+	FSMC_SRAM_GPIOConfig();
+	FSMC_SRAM_Init();
+
 #elif defined CTLSTYLE_V3D	/* Плата STM32F746G-DISCO с процессором STM32F746NGH6	*/
+
+  	FMC_SDRAMInitTypeDef  FMC_SDRAMInitStructure;
+    FMC_SDRAMTimingInitTypeDef  FMC_SDRAMTimingInitStructure;
+
+    /* GPIO configuration for FMC SDRAM bank */
+    SDRAM_GPIOConfig();
 
 	RCC->AHB3ENR |= RCC_AHB3ENR_FMCEN;	/* FMC clock enable */
 	__DSB();
@@ -631,22 +855,24 @@ void arm_hardware_sdram_initialize(void)
 	FMC_SDRAMInitStructure.FMC_ReadPipeDelay = FMC_ReadPipe_Delay_1;
 	FMC_SDRAMInitStructure.FMC_SDRAMTimingStruct = &FMC_SDRAMTimingInitStructure;
 
+	/* FMC SDRAM bank initialization */
+	FMC_SDRAMInit(&FMC_SDRAMInitStructure);
+
+	/* FMC SDRAM device initialization sequence */
+	SDRAM_InitSequence();
+
 #endif
 
-  /* FMC SDRAM bank initialization */
-  FMC_SDRAMInit(&FMC_SDRAMInitStructure); 
 
-  /* FMC SDRAM device initialization sequence */
-  SDRAM_InitSequence(); 
 
-#if 0		// Тест памяти
-	#if defined (SDRAM_BANK_ADDR)
-		#define SDRAM_ADDR		SDRAM_BANK_ADDR
-		#define SDRAM_SIZE 		0x8000uL
-	#else
-		#define SDRAM_ADDR 		0xC0000000uL
-		#define SDRAM_SIZE 		0x800000uL
-	#endif
+#if 1		// Тест памяти
+//	#if defined (SDRAM_BANK_ADDR)
+//		#define SDRAM_ADDR		SDRAM_BANK_ADDR
+//		#define SDRAM_SIZE 		0x8000uL
+//	#else
+//		#define SDRAM_ADDR 		0xC0000000uL
+//		#define SDRAM_SIZE 		0x800000uL
+//	#endif
 	#define BUFFER_SIZE 		0x1000uL
 
 	uint32_t addr = SDRAM_ADDR;
@@ -655,7 +881,7 @@ void arm_hardware_sdram_initialize(void)
 
 	do
 	{
-		sdram_test_pattern(addr, BUFFER_SIZE, 0x5555);
+		sdram_test_pattern(addr, BUFFER_SIZE, 0x9595);
 		sdram_test_pattern(addr, BUFFER_SIZE, 0xCCCC);
 		sdram_test_increment(addr, BUFFER_SIZE, 0x7800);
 		sdram_test_random(addr, BUFFER_SIZE);
