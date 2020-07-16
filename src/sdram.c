@@ -35,6 +35,7 @@ void sdram_test_pattern(uint_fast32_t addr, uint_fast16_t buffer_size, uint_fast
 
 void sdram_test_increment(uint_fast32_t addr, uint_fast16_t buffer_size, uint_fast16_t seed)
 {
+	uint_fast16_t err = 0;
 	for (uint32_t i = 0; i < buffer_size; i++)
 		*(volatile uint16_t*) (addr + 2 * i) = seed + i;
 
@@ -43,9 +44,12 @@ void sdram_test_increment(uint_fast32_t addr, uint_fast16_t buffer_size, uint_fa
 	{
 		r = *(volatile uint16_t*) (addr + 2 * i);
 		if(r !=  seed + i)
-			PRINTF("ERROR! %X - fill increment: %04X, read: %04X\n", addr + 2 * i,  seed + i, r);
+		{
+//			PRINTF("ERROR! %X - fill increment: %04X, read: %04X\n", addr + 2 * i,  seed + i, r);
+			err ++;
+		}
 	}
-
+	PRINTF("%04X, %d\n", addr, err);
 }
 
 void sdram_test_random(uint_fast32_t addr, uint_fast16_t buffer_size)
@@ -55,7 +59,7 @@ void sdram_test_random(uint_fast32_t addr, uint_fast16_t buffer_size)
 
 	for (uint32_t i = 0; i < buffer_size; i++)
 	{
-		aTxBuffer[i] = rand() & 0xFFFF;
+		aTxBuffer[i] = (324 * i) & 0xFFFF;
 		*(volatile uint16_t*) (addr + 2 * i) = aTxBuffer[i];
 	}
 
@@ -723,12 +727,12 @@ void FSMC_SRAM_Init(void)
 	FSMC_NORSRAMInitTypeDef  		FSMC_NORSRAMInitStructure;
 	FSMC_NORSRAMTimingInitTypeDef  	readWriteTiming;
 
-	readWriteTiming.FSMC_AddressSetupTime = 0x0F;
-	readWriteTiming.FSMC_AddressHoldTime = 0x00;
-	readWriteTiming.FSMC_DataSetupTime = 0x0F;
-	readWriteTiming.FSMC_BusTurnAroundDuration = 0x00;
-	readWriteTiming.FSMC_CLKDivision = 0x00;
-	readWriteTiming.FSMC_DataLatency = 0x00;
+	readWriteTiming.FSMC_AddressSetupTime = 3;
+	readWriteTiming.FSMC_AddressHoldTime = 1;
+	readWriteTiming.FSMC_DataSetupTime = 3;
+	readWriteTiming.FSMC_BusTurnAroundDuration = 0;
+	readWriteTiming.FSMC_CLKDivision = 0;
+	readWriteTiming.FSMC_DataLatency = 0;
 	readWriteTiming.FSMC_AccessMode = FSMC_AccessMode_A;
 
 	FSMC_NORSRAMInitStructure.FSMC_Bank = FSMC_Bank1_NORSRAM3;
@@ -764,8 +768,6 @@ void FSMC_SRAM_Init(void)
   */
 void arm_hardware_sdram_initialize(void)
 {
-
-
 #if defined CTLSTYLE_V1D	/* Плата STM32F429I-DISCO с процессором STM32F429ZIT6	*/
 
 	FMC_SDRAMInitTypeDef  FMC_SDRAMInitStructure;
