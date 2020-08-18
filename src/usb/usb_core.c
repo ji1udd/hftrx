@@ -54,6 +54,10 @@ usbd_epaddr2pipe(uint_fast8_t ep_addr)
 	case USBD_EP_CDC_INb:	return HARDWARE_USBD_PIPE_CDC_INb;
 	case USBD_EP_CDC_INTb:	return HARDWARE_USBD_PIPE_CDC_INTb;
 #endif /* WITHUSBCDC */
+#if WITHUSBCDCEEM
+	case USBD_EP_CDCEEM_OUT:	return HARDWARE_USBD_PIPE_CDCEEM_OUT;
+	case USBD_EP_CDCEEM_IN:		return HARDWARE_USBD_PIPE_CDCEEM_IN;
+#endif /* WITHUSBCDCEEM */
 	}
 }
 
@@ -95,6 +99,10 @@ usbd_pipe2epaddr(uint_fast8_t pipe)
 	case HARDWARE_USBD_PIPE_CDC_INb: return USBD_EP_CDC_INb;
 	case HARDWARE_USBD_PIPE_CDC_INTb: return USBD_EP_CDC_INTb;
 #endif /* WITHUSBCDC */
+#if WITHUSBCDCEEM
+	case HARDWARE_USBD_PIPE_CDCEEM_OUT: return USBD_EP_CDCEEM_OUT;
+	case HARDWARE_USBD_PIPE_CDCEEM_IN: return USBD_EP_CDCEEM_IN;
+#endif /* WITHUSBCDCEEM */
 	}
 }
 
@@ -1416,6 +1424,7 @@ usbd_pipes_initialize(PCD_HandleTypeDef * hpcd)
 		USBx->PIPESEL = 0;
 	}
 #endif /* WITHUSBUAC */
+
 #if WITHUSBUAC
 	if (1)
 	{
@@ -1448,6 +1457,63 @@ usbd_pipes_initialize(PCD_HandleTypeDef * hpcd)
 		USBx->PIPESEL = 0;
 	}
 #endif /* WITHUSBUAC */
+
+#if WITHUSBCDCEEM
+	if (1)
+	{
+		// Данные CDC EEM из компьютера в трансивер
+		const uint_fast8_t pipe = HARDWARE_USBD_PIPE_CDCEEM_OUT;	// PIPE12
+		const uint_fast8_t epnum = USBD_EP_CDCEEM_OUT;
+		const uint_fast8_t dir = 0;
+		//PRINTF(PSTR("usbd_pipe_initialize: pipe=%u endpoint=%02X\n"), pipe, epnum);
+
+		USBx->PIPESEL = pipe << USB_PIPESEL_PIPESEL_SHIFT;
+		while ((USBx->PIPESEL & USB_PIPESEL_PIPESEL) != (pipe << USB_PIPESEL_PIPESEL_SHIFT))
+			;
+		ASSERT(pipe == 12);
+		USBx->PIPECFG =
+			(0x0F & epnum) * (1u << USB_PIPECFG_EPNUM_SHIFT) |	// EPNUM endpoint
+			dir * (1u << USB_PIPECFG_DIR_SHIFT) |			// DIR 1: Transmitting direction 0: Receiving direction
+			1 * (1u << USB_PIPECFG_TYPE_SHIFT) |			// TYPE 1: Bulk transfer
+			1 * (1u << 9) |				// DBLB
+			0;
+		const unsigned bufsize64 = (USBD_CDCEEM_BUFSIZE + 63) / 64;
+
+		USBx->PIPEBUF = ((bufsize64 - 1) << USB_PIPEBUF_BUFSIZE_SHIFT) | (bufnumb64 << USB_PIPEBUF_BUFNMB_SHIFT);
+		USBx->PIPEMAXP = USBD_CDCEEM_BUFSIZE << USB_PIPEMAXP_MXPS_SHIFT;
+		bufnumb64 += bufsize64 * 2; // * 2 for DBLB
+		ASSERT(bufnumb64 <= 0x100);
+
+		USBx->PIPESEL = 0;
+	}
+	if (1)
+	{
+		// Данные CDC в компьютер из трансивера
+		const uint_fast8_t pipe = HARDWARE_USBD_PIPE_CDCEEM_IN;	// PIPE13
+		const uint_fast8_t epnum = USBD_EP_CDCEEM_IN;
+		const uint_fast8_t dir = 1;
+		//PRINTF(PSTR("usbd_pipe_initialize: pipe=%u endpoint=%02X\n"), pipe, epnum);
+
+		USBx->PIPESEL = pipe << USB_PIPESEL_PIPESEL_SHIFT;
+		while ((USBx->PIPESEL & USB_PIPESEL_PIPESEL) != (pipe << USB_PIPESEL_PIPESEL_SHIFT))
+			;
+		ASSERT(pipe == 13);
+		USBx->PIPECFG =
+			(0x0F & epnum) * (1u << USB_PIPECFG_EPNUM_SHIFT) |		// EPNUM endpoint
+			dir * (1u << USB_PIPECFG_DIR_SHIFT) |		// DIR 1: Transmitting direction 0: Receiving direction
+			1 * (1u << USB_PIPECFG_TYPE_SHIFT) |		// TYPE 1: Bulk transfer
+			1 * USB_PIPECFG_DBLB |		// DBLB
+			0;
+		const unsigned bufsize64 = (USBD_CDCEEM_BUFSIZE + 63) / 64;
+
+		USBx->PIPEBUF = ((bufsize64 - 1) << USB_PIPEBUF_BUFSIZE_SHIFT) | (bufnumb64 << USB_PIPEBUF_BUFNMB_SHIFT);
+		USBx->PIPEMAXP = USBD_CDCEEM_BUFSIZE << USB_PIPEMAXP_MXPS_SHIFT;
+		bufnumb64 += bufsize64 * 2; // * 2 for DBLB
+		ASSERT(bufnumb64 <= 0x100);
+
+		USBx->PIPESEL = 0;
+	}
+#endif /* WITHUSBCDCEEM */
 
 	/*
 	uint_fast8_t pipe;
@@ -2568,10 +2634,15 @@ HAL_StatusTypeDef USB_HC_StartXfer(USB_OTG_GlobalTypeDef *USBx, USB_OTG_HCTypeDe
 						(int) hc->dev_addr,
 						pSetup->b.bmRequestType, pSetup->b.bRequest, pSetup->b.wValue.w, pSetup->b.wIndex.w, pSetup->b.wLength.w);
 
-				USBx->USBREQ = ((pSetup->b.bRequest) << USB_USBREQ_BREQUEST_SHIFT) | pSetup->b.bmRequestType;
-				USBx->USBVAL = pSetup->b.wValue.w;
-				USBx->USBINDX = pSetup->b.wIndex.w;
-				USBx->USBLENG = pSetup->b.wLength.w;
+				USBx->USBREQ =
+						(pSetup->b.bRequest << USB_USBREQ_BREQUEST_SHIFT) |
+						(pSetup->b.bmRequestType << USB_USBREQ_BMREQUESTTYPE_SHIFT);
+				USBx->USBVAL =
+						(pSetup->b.wValue.w << USB_USBVAL_SHIFT);
+				USBx->USBINDX =
+						(pSetup->b.wIndex.w << USB_USBINDX_SHIFT);
+				USBx->USBLENG =
+						(pSetup->b.wLength.w << USB_USBLENG_SHIFT);
 
 				USBx->DCPMAXP = (USBx->DCPMAXP & ~ (USB_DCPMAXP_DEVSEL)) |
 						(0x00 << USB_DCPMAXP_DEVSEL_SHIFT) |	// DEVADD0 used
@@ -2888,10 +2959,12 @@ HAL_StatusTypeDef USB_HostInit(USB_OTG_GlobalTypeDef *USBx, const USB_OTG_CfgTyp
 
 	for (i = 0; i < USB20_DEVADD0_COUNT; ++ i)
 	{
-		volatile uint16_t * const DEVADDx = (& USBx->DEVADD0) + i;
+		volatile uint16_t * const DEVADDn = (& USBx->DEVADD0) + i;
 
-		* DEVADDx = (* DEVADDx & ~ (USB_DEVADDn_USBSPD)) |
+		* DEVADDn = (* DEVADDn & ~ (USB_DEVADDn_USBSPD | USB_DEVADDn_HUBPORT | USB_DEVADDn_UPPHUB)) |
 			(((cfg->pcd_speed == PCD_SPEED_HIGH) ? 0x03 : 0x02) << USB_DEVADDn_USBSPD_SHIFT) |
+			(0x00 << USB_DEVADDn_HUBPORT_SHIFT) |
+			(0x00 << USB_DEVADDn_UPPHUB_SHIFT) |
 			0;
 	}
 	return HAL_OK;
@@ -3194,9 +3267,9 @@ HAL_StatusTypeDef USB_DevInit(USB_OTG_GlobalTypeDef *USBx, const USB_OTG_CfgType
 	// When the function controller mode is selected, set all the bits in this register to 0.
 	for (i = 0; i < USB20_DEVADD0_COUNT; ++ i)
 	{
-		volatile uint16_t * const DEVADDx = (& USBx->DEVADD0) + i;
+		volatile uint16_t * const DEVADDn = (& USBx->DEVADD0) + i;
 
-		* DEVADDx = 0;
+		* DEVADDn = 0;
 	}
 
 	return HAL_OK;
@@ -4590,6 +4663,7 @@ void USB_WritePacket(USB_OTG_GlobalTypeDef *USBx, const uint8_t * data, uint_fas
 	//else
 	//	PRINTF(PSTR("USB_WritePacket, pipe=%d, size=%d, data[]={}\n"), ch_ep_num, size);
 
+	ASSERT(data != NULL || size == 0);
 
 	if (dma == USB_DISABLE)
 	{
@@ -4651,7 +4725,7 @@ void USB_ReadPacket(USB_OTG_GlobalTypeDef *USBx, uint8_t * dest, uint_fast16_t l
 	uint_fast16_t count32b = (len + 3) / 4;
 	uint32_t * dest32 = (uint32_t *) dest;
 	const volatile uint32_t * const rxfifo32 = & USBx_DFIFO(0);
-
+	ASSERT(dest != NULL || len == 0);
 	for (; count32b >= 16; count32b -= 16)
 	{
 		* dest32 ++ = * rxfifo32;
@@ -6520,6 +6594,25 @@ static void usbd_fifo_initialize(PCD_HandleTypeDef * hpcd, uint_fast16_t fullsiz
 
 #endif /* WITHUSBCDC */
 
+#if WITHUSBCDCEEM
+	{
+		/* полнофункциональное устройство */
+		const uint_fast8_t pipe = USBD_EP_CDCEEM_IN & 0x7F;
+
+		numoutendpoints += 1;
+		const int ncdceemindatapackets = 1 * mul2 + 1, ncdceemoutdatapackets = 3;
+
+		maxoutpacketsize4 = ulmax16(maxoutpacketsize4, ncdceemoutdatapackets * size2buff4(USBD_CDCEEM_BUFSIZE));
+
+
+		const uint_fast16_t size4 = ncdceemindatapackets * (size2buff4(USBD_CDCEEM_BUFSIZE) + add3tx);
+		ASSERT(last4 >= size4);
+		last4 -= size4;
+		USBx->DIEPTXF [pipe - 1] = usbd_makeTXFSIZ(last4, size4);
+		PRINTF(PSTR("usbd_fifo_initialize5 EEM %u bytes: 4*(full4-last4)=%u\n"), 4 * size4, 4 * (full4 - last4));
+	}
+#endif /* WITHUSBCDCEEM */
+
 #if WITHUSBHID && 0
 	{
 		/* ... устройство */
@@ -8246,6 +8339,39 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
 			TP();
 		}
 
+	    /* Handle RxQLevel Interrupt */
+	    if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_RXFLVL))
+	    {
+	      USB_MASK_INTERRUPT(hpcd->Instance, USB_OTG_GINTSTS_RXFLVL); //mgs:????
+	      const uint_fast32_t grxstsp = USBx->GRXSTSP;
+	      USB_OTG_EPTypeDef * const ep = & hpcd->OUT_ep [(grxstsp & USB_OTG_GRXSTSP_EPNUM_Msk) >> USB_OTG_GRXSTSP_EPNUM_Pos];
+
+	      if (((grxstsp & USB_OTG_GRXSTSP_PKTSTS_Msk) >> USB_OTG_GRXSTSP_PKTSTS_Pos) ==  STS_DATA_UPDT)
+	      {
+			const unsigned bcnt = (grxstsp & USB_OTG_GRXSTSP_BCNT_Msk) >> USB_OTG_GRXSTSP_BCNT_Pos;
+	        if (bcnt != 0)
+	        {
+//	        	if (ep->xfer_buff == NULL)
+//	        	{
+//	        		PRINTF("ep=%d\n", (int) ((grxstsp & USB_OTG_GRXSTSP_EPNUM_Msk) >> USB_OTG_GRXSTSP_EPNUM_Pos));
+//	        	}
+				ASSERT(ep->xfer_buff != NULL);
+	          USB_ReadPacket(USBx, ep->xfer_buff, bcnt);
+	          ep->xfer_buff += bcnt;
+	          ep->xfer_count += bcnt;
+	        }
+	      }
+	      else if (((grxstsp & USB_OTG_GRXSTSP_PKTSTS_Msk) >> USB_OTG_GRXSTSP_PKTSTS_Pos) ==  STS_SETUP_UPDT)
+	      {
+			const unsigned bcnt = (grxstsp & USB_OTG_GRXSTSP_BCNT) >> USB_OTG_GRXSTSP_BCNT_Pos;
+			ASSERT(bcnt == 8);
+			ASSERT((grxstsp & USB_OTG_GRXSTSP_EPNUM) == 0);
+	        USB_ReadPacket(USBx, (uint8_t *) hpcd->PSetup, 8);
+	        ep->xfer_count += bcnt;
+	      }
+	      USB_UNMASK_INTERRUPT(hpcd->Instance, USB_OTG_GINTSTS_RXFLVL); //mgs:????
+	    }
+
 		/* OUT endpoints interrupts */
 		if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_OEPINT))
 		{
@@ -8612,34 +8738,6 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
       HAL_PCD_ResetCallback(hpcd);
 
       __HAL_PCD_CLEAR_FLAG(hpcd, USB_OTG_GINTSTS_ENUMDNE);
-    }
-
-    /* Handle RxQLevel Interrupt */
-    if(__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_RXFLVL))
-    {
-      USB_MASK_INTERRUPT(hpcd->Instance, USB_OTG_GINTSTS_RXFLVL); //mgs:????
-      const uint_fast32_t grxstsp = USBx->GRXSTSP;
-      USB_OTG_EPTypeDef * const ep = & hpcd->OUT_ep [grxstsp & USB_OTG_GRXSTSP_EPNUM];
-
-      if (((grxstsp & USB_OTG_GRXSTSP_PKTSTS) >> USB_OTG_GRXSTSP_PKTSTS_Pos) ==  STS_DATA_UPDT)
-      {
-		const unsigned bcnt = (grxstsp & USB_OTG_GRXSTSP_BCNT) >> USB_OTG_GRXSTSP_BCNT_Pos;
-        if (bcnt != 0)
-        {
-          USB_ReadPacket(USBx, ep->xfer_buff, bcnt);
-          ep->xfer_buff += bcnt;
-          ep->xfer_count += bcnt;
-        }
-      }
-      else if (((grxstsp & USB_OTG_GRXSTSP_PKTSTS) >> USB_OTG_GRXSTSP_PKTSTS_Pos) ==  STS_SETUP_UPDT)
-      {
-		const unsigned bcnt = (grxstsp & USB_OTG_GRXSTSP_BCNT) >> USB_OTG_GRXSTSP_BCNT_Pos;
-		ASSERT(bcnt == 8);
-		ASSERT((grxstsp & USB_OTG_GRXSTSP_EPNUM) == 0);
-        USB_ReadPacket(USBx, (uint8_t *) hpcd->PSetup, 8);
-        ep->xfer_count += bcnt;
-      }
-      USB_UNMASK_INTERRUPT(hpcd->Instance, USB_OTG_GINTSTS_RXFLVL); //mgs:????
     }
 
     /* Handle SOF Interrupt */
@@ -9983,6 +10081,9 @@ static void hardware_usbd_initialize(void)
 #if WITHUSBDFU
 	USBD_AddClass(& hUsbDevice, & USBD_CLASS_DFU);
 #endif /* WITHUSBDFU */
+#if WITHUSBCDCEEM
+	USBD_AddClass(& hUsbDevice, & USBD_CLASS_CDC_EEM);
+#endif /* WITHUSBCDCEEM */
 	PRINTF("hardware_usbd_initialize done\n");
 }
 
@@ -13247,6 +13348,7 @@ static void HCD_RXQLVL_IRQHandler(HCD_HandleTypeDef *hhcd)
 		if ((pktcnt > 0) && (hhcd->hc [channelnum].xfer_buff != (void *)0))
 		{
 
+			ASSERT(hhcd->hc [channelnum].xfer_buff != NULL);
 			USB_ReadPacket(hhcd->Instance, hhcd->hc [channelnum].xfer_buff, pktcnt);
 
 			/*manage multiple Xfer */
@@ -14211,6 +14313,8 @@ void board_ehci_initialize(void)
 	// USBH_EHCI_HCICAPLENGTH == USB1_EHCI->HCCAPBASE
 	// USBH_EHCI_HCSPARAMS == USB1_EHCI->HCSPARAMS
 	// USBH_EHCI_HCCPARAMS == USB1_EHCI->HCCPARAMS
+	// OHCI BASE = USB1HSFSP2_BASE	(MPU_AHB6_PERIPH_BASE + 0xC000)
+	// EHCI BASE = USB1HSFSP1_BASE	(MPU_AHB6_PERIPH_BASE + 0xD000)
 
 	PRINTF("board_ehci_initialize: HCCAPBASE=%08lX\n", (unsigned long) USB1_EHCI->HCCAPBASE);
 	PRINTF("board_ehci_initialize: HCSPARAMS=%08lX\n", (unsigned long) USB1_EHCI->HCSPARAMS);

@@ -415,7 +415,6 @@ extern "C" {
 
 	// Renesas CPU
 	#define CPUSTYLE_ARM		1		/* архитектура процессора ARM */
-	#define	CPUSTYLE_ARM_CA9	1
 
 	/* MCU Lineup */
 	#define TARGET_RZA1LC           (0x00200000)
@@ -461,7 +460,6 @@ extern "C" {
 
 	#define CORE_CA7	1
 	#define CPUSTYLE_ARM		1		/* архитектура процессора ARM */
-	#define	CPUSTYLE_ARM_CA7	1
 
 	#include "armcpu/stm32mp1xx.h"
 	#include "irq_ctrl.h"
@@ -537,6 +535,7 @@ void hardware_adc_initialize(void);
 
 	#define FLASHMEM //__flash
 	#define NOINLINEAT // __attribute__((noinline))
+	#define strlen_P(s) strlen(s)
 
 	#if CPUSTYLE_R7S721
 		#define FLASHMEMINIT	__attribute__((section(".initdata"))) /* не требуется быстрый доступ - например образ загружаемый в FPGA */
@@ -586,11 +585,11 @@ void hardware_adc_initialize(void);
 		#define RAMFUNC			 __attribute__((__section__(".itcm")))
 		#define RAMNOINIT_D1	//__attribute__((section(".noinit"))) /* размещение в памяти SRAM_D1 */
 		#define RAM_D2			//__attribute__((section(".bss"))) /* размещение в памяти SRAM_D1 */
-		#define RAMFRAMEBUFF	//__attribute__((section(".noinit"))) /* размещение в памяти SRAM_D1 */
+		#define RAMFRAMEBUFF	__attribute__((section(".sdram"))) /* размещение в памяти SRAM_D1 */
 		#define RAMDTCM			__attribute__((section(".dtcm"))) /* размещение в памяти DTCM */
 		#define RAMBIGDTCM	//__attribute__((section(".dtcm"))) /* размещение в памяти DTCM на процессорах где её много */
 		#define RAMBIGDTCM_MDMA		//__attribute__((section(".dtcm"))) /* размещение в памяти DTCM на процессорах где её много */
-		#define RAMBIG			//__attribute__((section(".ram_d1"))) /* размещение в памяти SRAM_D1 */
+		#define RAMBIG			__attribute__((section(".sdram"))) /* размещение в памяти SRAM_D1 */
 		#define RAMHEAP __attribute__((used, section(".heap"), aligned(16))) // memory used as heap zone
 	#elif CPUSTYLE_STM32F4XX && (defined (STM32F429xx) || defined(STM32F407xx))
 		#define VTRATTR	__attribute__ ((section("vtable"), used, aligned(256 * 4)))
@@ -916,6 +915,11 @@ calcdivround2(
 	#define HARDWARE_USBD_PIPE_RNDIS_OUT	12	// RNDIS OUT Данные RNDIS от компьютера в TRX
 	#define HARDWARE_USBD_PIPE_RNDIS_IN		13	// RNDIS IN Данные RNDIS в компьютер из TRX
 	#define HARDWARE_USBD_PIPE_RNDIS_INT	8	//
+
+	/* совпадает с RNDIS */
+	#define HARDWARE_USBD_PIPE_CDCEEM_OUT	12	// CDC EEM OUT Данные ком-порта от компьютера в TRX
+	#define HARDWARE_USBD_PIPE_CDCEEM_IN	13	// CDC EEM IN Данные ком-порта в компьютер из TRX
+
 #endif /* CPUSTYLE_R7S721 */
 
 #define CATPCOUNTSIZE (13)

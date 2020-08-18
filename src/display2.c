@@ -8,8 +8,8 @@
 #include "hardware.h"
 #include "board.h"
 #include "audio.h"
+#include "display2.h"
 
-#include "display/display.h"
 #include "formats.h"
 
 #include <string.h>
@@ -28,55 +28,76 @@
 
 #endif /* LCDMODE_LTDC */
 
+
+
+/* стркутура хранит цвета элементов дизайна. Возмодно треите поле - для анталиасингового формирования изображения */
+typedef struct colorpair_tag
+{
+	COLORMAIN_T fg, bg;
+} COLORPAIR_T;
+
 // todo: учесть LCDMODE_COLORED
 
 // Параметры отображения состояния прием/пеердача
 static const COLORPAIR_T colors_2rxtx [2] =
 {
-		{	COLORMAIN_GREEN,	COLORMAIN_BLACK,	},	// RX
-		{	COLORMAIN_RED,		COLORMAIN_BLACK,	},	// TX
+	{	COLORMAIN_GREEN,	COLORMAIN_BLACK,	},	// RX
+	{	COLORMAIN_RED,		COLORMAIN_BLACK,	},	// TX
 };
 
 // Параметры отображения состояний из трех вариантов
 static const COLORPAIR_T colors_4state [4] =
 {
-		{	LABELINACTIVETEXT,	LABELINACTIVEBACK,	},
-		{	LABELACTIVETEXT,	LABELACTIVEBACK,	},
-		{	LABELACTIVETEXT,	LABELACTIVEBACK,	},
-		{	LABELACTIVETEXT,	LABELACTIVEBACK,	},
+	{	LABELINACTIVETEXT,	LABELINACTIVEBACK,	},
+	{	LABELACTIVETEXT,	LABELACTIVEBACK,	},
+	{	LABELACTIVETEXT,	LABELACTIVEBACK,	},
+	{	LABELACTIVETEXT,	LABELACTIVEBACK,	},
 };
 
 // Параметры отображения состояний из двух вариантов
 static const COLORPAIR_T colors_2state [2] =
 {
-		{	LABELINACTIVETEXT,	LABELINACTIVEBACK,	},
-		{	LABELACTIVETEXT,	LABELACTIVEBACK,	},
+	{	LABELINACTIVETEXT,	LABELINACTIVEBACK,	},
+	{	LABELACTIVETEXT,	LABELACTIVEBACK,	},
 };
 
 // Параметры отображения текстов без вариантов
 static const COLORPAIR_T colors_1state [1] =
 {
-		{	LABELTEXT,	LABELBACK,	},
+	{	LABELTEXT,	LABELBACK,	},
+};
+
+// Параметры отображения состояний FUNC MENU из двух вариантов
+static const COLORPAIR_T colors_2fmenu [2] =
+{
+	{	FMENUINACTIVETEXT,	FMENUINACTIVEBACK,	},
+	{	FMENUACTIVETEXT,	FMENUACTIVEBACK,	},
+};
+
+// Параметры отображения текстов без вариантов
+static const COLORPAIR_T colors_1fmenu [1] =
+{
+	{	FMENUTEXT,	FMENUBACK,	},
 };
 
 // Параметры отображения текстов без вариантов
 // синий
 static const COLORPAIR_T colors_1stateBlue [1] =
 {
-		{	DESIGNBIGCOLORB,	LABELBACK,	},
+	{	DESIGNBIGCOLORB,	LABELBACK,	},
 };
 
 // Параметры отображения частоты дополнительного приемника
 // синий
 static const COLORPAIR_T colors_1freqB [1] =
 {
-		{	DESIGNBIGCOLORB,	LABELBACK,	},
+	{	DESIGNBIGCOLORB,	LABELBACK,	},
 };
 
 // Параметры отображения частоты основного приемника
 static const COLORPAIR_T colors_1freq [1] =
 {
-		{	DESIGNBIGCOLOR,	LABELBACK,	},
+	{	DESIGNBIGCOLOR,	LABELBACK,	},
 };
 
 // todo: switch off -Wunused-function
@@ -139,6 +160,7 @@ static int_fast16_t glob_gridstep = 10000; //1 * glob_griddigit;	// 10, 20. 50 k
 static uint_fast8_t glob_fillspect;	/* заливать заполнением площадь под графиком спектра */
 static uint_fast8_t glob_wfshiftenable;	/* разрешение или запрет сдвига водопада при изменении частоты */
 static uint_fast8_t glob_spantialiasing;	/* разрешение или запрет антиалиасинга спектра */
+static uint_fast8_t glob_colorsp;	/* разрешение или запрет раскраски спектра */
 
 static int_fast16_t glob_topdb = 30;	/* верхний предел FFT */
 static int_fast16_t glob_bottomdb = 130;	/* нижний предел FFT */
@@ -555,16 +577,58 @@ void display_1state_P(
 	display2_text_P(x, y, & label, colors_1state, 0);
 }
 
+
+void display_2fmenus(
+	uint_fast8_t x,
+	uint_fast8_t y,
+	uint_fast8_t state,
+	const char * state1,	// активное
+	const char * state0
+	)
+{
+	#if LCDMODE_COLORED
+		const char * const labels [2] = { state1, state1, };
+	#else /* LCDMODE_COLORED */
+		const char * const labels [2] = { state0, state1, };
+	#endif /* LCDMODE_COLORED */
+	display2_text(x, y, labels, colors_2fmenu, state);
+}
+
+void display_2fmenus_P(
+	uint_fast8_t x,
+	uint_fast8_t y,
+	uint_fast8_t state,
+	const FLASHMEM char * state1,	// активное
+	const FLASHMEM char * state0
+	)
+{
+	#if LCDMODE_COLORED
+		const FLASHMEM char * const labels [2] = { state1, state1, };
+	#else /* LCDMODE_COLORED */
+		const FLASHMEM char * const labels [2] = { state0, state1, };
+	#endif /* LCDMODE_COLORED */
+	display2_text_P(x, y, labels, colors_2fmenu, state);
+}
+
 // Параметры, не меняющие состояния цветом
-void display_1state(
+void display_1fmenu(
 	uint_fast8_t x, 
 	uint_fast8_t y, 
 	const char * label
 	)
 {
-	display2_text(x, y, & label, colors_1state, 0);
+	display2_text(x, y, & label, colors_1fmenu, 0);
 }
 
+// Параметры, не меняющие состояния цветом
+void display_1fmenu_P(
+	uint_fast8_t x,
+	uint_fast8_t y,
+	const FLASHMEM char * label
+	)
+{
+	display2_text_P(x, y, & label, colors_1fmenu, 0);
+}
 
 static const FLASHMEM char text_nul1_P [] = " ";
 static const FLASHMEM char text_nul2_P [] = "  ";
@@ -1433,7 +1497,7 @@ static void display2_siglevel4(
 #if WITHIF4DSP
 int_fast32_t display_zoomedbw(void)
 {
-	return dsp_get_samplerateuacin_rts() >> glob_zoomxpow2;
+	return ((int_fast64_t) dsp_get_samplerateuacin_rts() * SPECTRUMWIDTH_MULT / SPECTRUMWIDTH_DENOM) >> glob_zoomxpow2;
 }
 #endif /* WITHIF4DSP */
 
@@ -4690,12 +4754,18 @@ enum
 
 	#define SWRMAX	(SWRMIN * 40 / 10)	// 4.0 - значение на полной шкале (на этом дизайне нет, просто для того чтобы компилировлось)
 
+	enum {
+		DLES = 35,		// spectrum window upper line
+        DLE1 = 91,		// 96-5
+		DLE_unused
+	};
+
 	enum
 	{
 		BDTH_ALLRXBARS = 30,	// ширина зоны для отображение барграфов на индикаторе
 
 		BDTH_ALLRX = 50, 		// ширина зоны для отображение графического окна на индикаторе
-		BDCV_ALLRX = ROWS2GRID(50),	// количество строк, отведенное под S-метр, панораму, иные отображения
+		BDCV_ALLRX = ROWS2GRID(55 /* DLE1 - DLES */),	// количество строк, отведенное под панораму и волопад.
 
 		BDTH_LEFTRX = 17,	// ширина индикатора баллов (без плюсов)
 		BDTH_RIGHTRX = BDTH_ALLRXBARS - BDTH_LEFTRX,	// ширина индикатора плюсов
@@ -4707,14 +4777,9 @@ enum
 
 		/* совмещение на одном экрание водопада и панорамы */
 		BDCO_SPMRX = ROWS2GRID(0),	// смещение спектра по вертикали в ячейках от начала общего поля
-		BDCV_SPMRX = ROWS2GRID(27),	// вертикальный размер спектра в ячейках
+		BDCV_SPMRX = ROWS2GRID(32),	// вертикальный размер спектра в ячейках
 		BDCO_WFLRX = BDCV_SPMRX,	// смещение водопада по вертикали в ячейках от начала общего поля
 		BDCV_WFLRX = BDCV_ALLRX - BDCV_SPMRX	// вертикальный размер водопада в ячейках
-	};
-	enum {
-		DLES = 40,		// spectrum window upper line
-        DLE1 = 91,		// 96-5
-		DLE_unused
 	};
 
 
@@ -4782,7 +4847,7 @@ enum
 
 		{	37, 10,	display2_mode3_a,	REDRM_MODE,	PGALL, },	// SSB/CW/AM/FM/...
 		{	41, 10,	display2_rxbw3,		REDRM_MODE, PGALL, },	// 3.1 / 0,5 / WID / NAR
-		//{	45, 10,
+		{	46, 10,	display2_agc3,		REDRM_MODE, PGALL, },	// AGC mode
 
 		{	37, 15,	display2_nr3,		REDRM_MODE, PGALL, },	// NR : was: AGC
 		{	41, 15,	display2_datamode3,	REDRM_MODE, PGALL, },	// DATA mode indicator
@@ -4810,7 +4875,6 @@ enum
 
 		//{	24, 30,	display_freqmeter10, REDRM_BARS, PGALL, },	// измеренная частота опоры
 		{	37, 30,	display2_freqdelta8, REDRM_BARS, PGALL, },	// выход ЧМ демодулятора
-		{	46, 30,	display2_agc3,		REDRM_MODE, PGALL, },	// AGC mode
 
 		{	0,	DLES,	display2_wfl_init,	REDRM_INIS,	PGINI, },	// формирование палитры водопада
 		{	0,	DLES,	display2_latchwaterfall,	REDRM_BARS,	PGLATCH, },	// формирование данных спектра для последующего отображения спектра или водопада
@@ -5728,8 +5792,10 @@ static FLOAT_t filter_spectrum(
 
 #endif
 
-	enum { BUFDIM_X = DIM_X, BUFDIM_Y = DIM_Y };
-	//enum { BUFDIM_X = ALLDX, BUFDIM_Y = ALLDY };
+static PACKEDCOLORMAIN_T color_scale [SPDY];	/* массив значений для раскраски спектра */
+
+enum { BUFDIM_X = DIM_X, BUFDIM_Y = DIM_Y };
+//enum { BUFDIM_X = ALLDX, BUFDIM_Y = ALLDY };
 
 static uint_fast32_t wffreqpix;			// глобальный пиксель по x центра спектра, для которой в последной раз отрисовали.
 static uint_fast8_t wfzoompow2;				// масштаб, с которым выводили спектр
@@ -5746,53 +5812,64 @@ display2_wfl_init(
 	)
 {
 	//PRINTF("wfpalette_initialize: main=%d, pip=%d, PALETTESIZE=%d, LCDMODE_MAIN_PAGES=%d\n", sizeof (PACKEDCOLORMAIN_T), sizeof (PACKEDCOLORMAIN_T), PALETTESIZE, LCDMODE_MAIN_PAGES);
-	if (PALETTESIZE != 256)
-		return;
-#if ! defined (COLORPIP_SHADED)
-	// Init 256 colors palette
-	ASSERT(PALETTESIZE == 256);
-	// PALETTESIZE == 256
-	int a = 0;
 	int i;
-	// a = 0
-	for (i = 0; i < 64; ++ i)
+	if (PALETTESIZE == 256)
 	{
-		// для i = 0..15 результат формулы = ноль
-		wfpalette [a + i] = TFTRGB565(0, 0, (int) (powf((float) 0.0625 * i, 4)));	// проверить результат перед попыткой применить целочисленные вычисления!
-	}
-	a += i;
-	// a = 64
-	for (i = 0; i < 32; ++ i)
-	{
-		wfpalette [a + i] = TFTRGB565(0, i * 8, 255);
-	}
-	a += i;
-	// a = 96
-	for (i = 0; i < 32; ++ i)
-	{
-		wfpalette [a + i] = TFTRGB565(0, 255, 255 - i * 8);
-	}
-	a += i;
-	// a = 128
-	for (i = 0; i < 32; ++ i)
-	{
-		wfpalette [a + i] = TFTRGB565(i * 8, 255, 0);
-	}
-	a += i;
-	// a = 160
-	for (i = 0; i < 64; ++ i)
-	{
-		wfpalette [a + i] = TFTRGB565(255, 255 - i * 4, 0);
-	}
-	a += i;
-	// a = 224
-	for (i = 0; i < 32; ++ i)
-	{
-		wfpalette [a + i] = TFTRGB565(255, 0, i * 8);
-	}
-	a += i;
-	// a = 256
+#if ! defined (COLORPIP_SHADED)
+		// Init 256 colors palette
+		ASSERT(PALETTESIZE == 256);
+		// PALETTESIZE == 256
+		int a = 0;
+		// a = 0
+		for (i = 0; i < 64; ++ i)
+		{
+			// для i = 0..15 результат формулы = ноль
+			wfpalette [a + i] = TFTRGB565(0, 0, (int) (powf((float) 0.0625 * i, 4)));	// проверить результат перед попыткой применить целочисленные вычисления!
+		}
+		a += i;
+		// a = 64
+		for (i = 0; i < 32; ++ i)
+		{
+			wfpalette [a + i] = TFTRGB565(0, i * 8, 255);
+		}
+		a += i;
+		// a = 96
+		for (i = 0; i < 32; ++ i)
+		{
+			wfpalette [a + i] = TFTRGB565(0, 255, 255 - i * 8);
+		}
+		a += i;
+		// a = 128
+		for (i = 0; i < 32; ++ i)
+		{
+			wfpalette [a + i] = TFTRGB565(i * 8, 255, 0);
+		}
+		a += i;
+		// a = 160
+		for (i = 0; i < 64; ++ i)
+		{
+			wfpalette [a + i] = TFTRGB565(255, 255 - i * 4, 0);
+		}
+		a += i;
+		// a = 224
+		for (i = 0; i < 32; ++ i)
+		{
+			wfpalette [a + i] = TFTRGB565(255, 0, i * 8);
+		}
+		a += i;
+		// a = 256
 #endif /* !  defined (COLORPIP_SHADED) */
+	}
+
+	/* массив значений для раскраски спектра */
+	for (i = 0; i < SPDY; ++ i)
+	{
+#if LCDMODE_MAIN_L8
+		color_scale [i] = normalize(i, 0, SPDY - 1, PALETTESIZE - 1);
+#else /* LCDMODE_MAIN_L8 */
+		color_scale [i] = wfpalette [normalize(i, 0, SPDY - 1, PALETTESIZE - 1)];
+#endif /* LCDMODE_MAIN_L8 */
+	}
 }
 
 // получить горизонтальную позицию для заданного отклонения в герцах
@@ -6080,8 +6157,17 @@ static void display2_spectrum(
 			{
 				// ломанная
 				uint_fast16_t ynew = SPDY - 1 - dsp_mag2y(filter_spectrum(x), SPDY - 1, glob_topdb, glob_bottomdb);
+				if (glob_colorsp)
+				{
+					/* раскрашенный спектр */
+					for (uint_fast16_t dy = SPDY - 1, i = 0; dy > ynew; dy --, i ++)
+					{
+						colpip_point(colorpip, BUFDIM_X, BUFDIM_Y, x, dy, color_scale [i]);
+					}
+				}
+
 				if (x != 0)
-					colmain_line(colorpip, BUFDIM_X, BUFDIM_Y, x - 1, ylast, x, ynew, COLORPIP_SPECTRUMLINE, glob_spantialiasing);
+					colmain_line(colorpip, BUFDIM_X, BUFDIM_Y, x - 1, ylast, x, ynew, COLORPIP_SPECTRUMLINE, glob_colorsp ? 0 : glob_spantialiasing);
 				ylast = ynew;
 			}
 		}
@@ -6114,7 +6200,7 @@ static void display2_spectrum(
 					}
 				}
 			}
-			display_colorgrid_xor(colorpip, SPY0, SPDY, f0, bw);	// отрисовка маркеров частот
+			display_colorgrid_set(colorpip, SPY0, SPDY, f0, bw);	// отрисовка маркеров частот
 		}
 	}
 
@@ -6885,6 +6971,13 @@ void
 board_set_spantialiasing(uint_fast8_t v)
 {
 	glob_spantialiasing = v != 0;
+}
+
+/* разрешение или запрет раскраски спектра */
+void
+board_set_colorsp(uint_fast8_t v)
+{
+	glob_colorsp = v != 0;
 }
 
 /* заливать заполнением площадь под графиком спектра */

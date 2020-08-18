@@ -152,6 +152,8 @@ enum
 
 #if WITHIF4DSP
 
+	#define BOARD_DETECTOR_SSB 	0		// Заглушка
+
 	#define	BOARD_AGCCODE_ON	0x00
 	#define	BOARD_AGCCODE_OFF	0x01
 
@@ -159,6 +161,7 @@ enum
 	#define BOARD_NOTCH_MANUAL	1
 	#define BOARD_NOTCH_AUTO	2
 	#define WITHLMSAUTONOTCH	1	/* Использование AUTONOTCH	*/
+	//#define WITHLEAKYLMSANR		1	/* Использование LeakyLmsNr */
 
 	#define WITHNOTCHFREQ		1	/* NOTCH фильтр с устанавливаемой через меню или потенциометром частотой */
 	#define WITHSUBTONES		1	/* выполняется формирование субтона при передаче NFM */
@@ -3312,12 +3315,6 @@ int_fast16_t hamradio_getright_bp(uint_fast8_t pathi);	/* получить пр�
 uint_fast8_t hamradio_get_bkin_value(void);
 uint_fast8_t hamradio_get_spkon_value(void);	// не-0: динамик включен
 
-uint_fast8_t hamradio_get_pre_value(void);
-void hamradio_set_pre_value(uint_fast8_t v);
-uint_fast8_t hamradio_get_att_value(void);
-void hamradio_set_att_value(uint_fast8_t v);
-const char * hamradio_get_submode_label(uint_fast8_t v);
-uint_fast8_t hamradio_get_submode(void);
 void hamradio_change_submode(uint_fast8_t newsubmode, uint_fast8_t need_correct_freq);
 uint_fast8_t hamradio_get_low_bp(int_least16_t rotate);
 uint_fast8_t hamradio_get_high_bp(int_least16_t rotate);
@@ -3329,7 +3326,7 @@ void hamradio_disable_keyboard_redirect(void);
 void hamradio_enable_keyboard_redirect(void);
 uint_fast8_t hamradio_set_freq (uint_fast32_t freq);
 void hamradio_set_lockmode (uint_fast8_t lock);
-int_fast16_t hamradio_get_if_shift(void);
+int_fast16_t hamradio_if_shift(int_fast8_t step);
 uint_fast8_t hamradio_get_cw_wpm(void);
 uint_fast8_t hamradio_get_gmikeequalizer(void);
 void hamradio_set_gmikeequalizer(uint_fast8_t v);
@@ -3397,14 +3394,25 @@ void hamradio_set_gmutespkr(uint_fast8_t v);
 uint_fast8_t hamradio_verify_freq_bands(uint_fast32_t freq, uint_fast32_t * bottom, uint_fast32_t * top);
 
 /* выбор внешнего вида прибора - стрелочный или градусник */
-enum {
+enum
+{
 	SMETER_TYPE_BARS,
 	SMETER_TYPE_DIAL,
 	SMETER_TYPE_COUNT
 };
 
+/* Управление частичной полосоц отображением спектра/волопада */
+enum
+{
+	SPECTRUMWIDTH_MULT = 11,	// 44 кГц
+	SPECTRUMWIDTH_DENOM = 12,
+};
+
 uint_fast8_t hamradio_get_gsmetertype(void);
 void display2_set_smetertype(uint_fast8_t v);
+
+
+const char * get_band_label3(unsigned b); /* получение человекопонятного названия диапазона */
 
 #ifdef __cplusplus
 }

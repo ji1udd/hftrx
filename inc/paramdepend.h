@@ -2158,7 +2158,7 @@ extern "C" {
 #else
 	//#error Undefined CTLREGMODE_xxx option
 #endif
-#define WITHHARDINTERLOCK (WITHNESTEDINTERRUPTS && (CPUSTYLE_ARM_CM7 || CPUSTYLE_ARM_CM4 || CPUSTYLE_ARM_CM3 || CPUSTYLE_ARM_CM0 || CPUSTYLE_ARM_CA9 || CPUSTYLE_ARM_CA7))
+#define WITHHARDINTERLOCK (WITHNESTEDINTERRUPTS && (CPUSTYLE_ARM_CM7 || CPUSTYLE_ARM_CM4 || CPUSTYLE_ARM_CM3 || CPUSTYLE_ARM_CM0 || (__CORTEX_A != 0)))
 
 #ifndef WITHFLATMENU
 	#define WITHFLATMENU (CTLSTYLE_SW2011ALL && ! CPUSTYLE_ATMEGA_XXX4)
@@ -2186,7 +2186,7 @@ extern "C" {
 	#define LCDMODE_LTDC	1		/* Use framebuffer-based LCD-TFT Controller (LTDC) */
 	#define LCDMODE_MAIN_L8		1	/* используется 8 бит на пиксель представление экрана. Иначе - 16 бит - RGB565. */
 	//#define LCDMODE_MAIN_RGB565	1
-	#define LCDMODE_MAIN_PAGES	1
+	#define LCDMODE_MAIN_PAGES	3
 	#define LCDMODE_PIXELSIZE 1
 
 	//#define LCDMODE_PIP_RGB565	1	/* используется PIP с форматом 16 бит - RGB565 */

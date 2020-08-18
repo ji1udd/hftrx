@@ -148,7 +148,8 @@ static uint_fast8_t 	glob_moniflag = 1;		/* Уровень сигнала сам
 static uint_fast8_t 	glob_subtonelevel = 0;	/* Уровень сигнала CTCSS в процентах - 0%..100% */
 static uint_fast8_t 	glob_amdepth = 30;		/* Глубина модуляции в АМ - 0..100% */
 static uint_fast8_t		glob_dacscale = 100;	/* На какую часть (в процентах) от полной амплитуды использцется ЦАП передатчика */
-static uint_fast16_t	glob_gdigiscale = 250;	/* Увеличение усиления при передаче в цифровых режимах 100..300% */
+static uint_fast16_t	glob_gdigiscale = 100;	/* Увеличение усиления при передаче в цифровых режимах 100..300% */
+static uint_fast16_t	glob_cwscale = 100;	/* Увеличение усиления при передаче в цифровых режимах 100..300% */
 
 static uint_fast8_t 	glob_digigainmax = 96;
 static uint_fast8_t		glob_gvad605 = UINT8_MAX;	/* напряжение на AD605 (управление усилением тракта ПЧ */
@@ -4829,6 +4830,11 @@ static void printsigwnd(void)
 }
 #endif
 
+void apply_window_function(float32_t * v, uint_fast16_t size)
+{
+	arm_cmplx_mult_real_f32(v, wnd256, v, size);
+}
+
 // Нормирование уровня сигнала к шкале
 // возвращает значения от 0 до ymax включительно
 // 0 - минимальный сигнал, ymax - максимальный
@@ -4909,6 +4915,20 @@ static void fftzoom_filer_decimate(
 	arm_fir_decimate_f32(& c.fir_config, buffer, buffer, usedSize);
 }
 
+// децимация НЧ спектра для увеличения разрешения
+void fftzoom_x2(float32_t * buffer)
+{
+	const struct zoom_param * const prm = & zoom_params [0];
+	arm_fir_decimate_instance_f32 fir_config;
+	const unsigned usedSize = NORMALFFT * prm->zoom;
+	VERIFY(ARM_MATH_SUCCESS == arm_fir_decimate_init_f32(& fir_config,
+						prm->numTaps,
+						prm->zoom,          // Decimation factor
+						prm->pCoeffs,
+						zoomfft_st.fir_state,            // Filter state variables
+						usedSize));
+	arm_fir_decimate_f32(& fir_config, buffer, buffer, usedSize);
+}
 
 static void
 make_cmplx(
@@ -4928,13 +4948,15 @@ make_cmplx(
 
 static int raster2fft(
 	int x,	// window pos
-	int dx	// width
+	int dx,	// width
+	int fftsize,	// размер буфера FFT (в бинах)
+	int visiblefftsize	// Часть буфера FFT, отобрааемая на экране (в бинах)
 	)
 {
 	const int xm = dx / 2;	// middle
 	const int delta = x - xm;	// delta in pixels
-	const int fftoffset = delta * ((int) NORMALFFT / 2 - 1) / xm;
-	return fftoffset < 0 ? ((int) NORMALFFT + fftoffset) : fftoffset;
+	const int fftoffset = delta * (visiblefftsize / 2 - 1) / xm;
+	return fftoffset < 0 ? (fftsize + fftoffset) : fftoffset;
 
 }
 
@@ -4986,10 +5008,12 @@ uint_fast8_t dsp_getspectrumrow(
 	arm_cfft_f32(FFTCONFIGSpectrum, zoomfft_st.cmplx_sig, 0, 1);	// forward transform
 	arm_cmplx_mag_f32(zoomfft_st.cmplx_sig, zoomfft_st.cmplx_sig, NORMALFFT);	/* Calculate magnitudes */
 
+	enum { visiblefftsize = (int_fast64_t) NORMALFFT * SPECTRUMWIDTH_MULT / SPECTRUMWIDTH_DENOM };
+	enum { fftsize = NORMALFFT };
+	static const FLOAT_t fftcoeff = (FLOAT_t) 1 / (int32_t) (NORMALFFT / 2);
 	for (x = 0; x < dx; ++ x)
 	{
-		static const FLOAT_t fftcoeff = (FLOAT_t) 1 / (int32_t) (NORMALFFT / 2);
-		const int fftpos = raster2fft(x, dx);
+		const int fftpos = raster2fft(x, dx, fftsize, visiblefftsize);
 		hbase [x] = zoomfft_st.cmplx_sig [fftpos] * fftcoeff;
 	}
 	return 1;
@@ -5702,7 +5726,7 @@ void RAMFUNC dsp_extbuffer32rx(const int32_t * buff)
 
 	#if WITHLOOPBACKTEST
 
-		const INT32P_t dual = loopbacktestaudio(vi, dspmodeA, shape);
+		const FLOAT32P_t dual = loopbacktestaudio(vi, dspmodeA, shape);
 		processafadcsample(dual, dspmodeA, shape, ctcss);	// обработка одного сэмпла с микрофона
 		//
 		// Тестирование источников и потребителей звука
@@ -5980,13 +6004,14 @@ txparam_update(uint_fast8_t profile)
 
 	const FLOAT_t c1MODES = (FLOAT_t) HARDWARE_DACSCALE;	// предотвращение переполнения
 	const FLOAT_t c1DIGI = c1MODES * (FLOAT_t) glob_gdigiscale / 100;
+	const FLOAT_t c1CW = c1MODES * (FLOAT_t) glob_cwscale / 100;
 
-	txlevelfenceAM = 	txlevelfence * c1MODES;	// Для режимов с lo6=0 - у которых нет подавления нерабочей боковой
+	txlevelfenceAM = 	txlevelfence * c1CW;	// Для режимов с lo6=0 - у которых нет подавления нерабочей боковой
 	txlevelfenceSSB = 	txlevelfence * c1MODES;
 	txlevelfenceBPSK = 	txlevelfence * c1MODES;
-	txlevelfenceNFM = 	txlevelfence * c1MODES;
-	txlevelfenceCW = 	txlevelfence * c1MODES;
-	txlevelfenceBPSK = 	txlevelfence * c1MODES;
+	txlevelfenceNFM = 	txlevelfence * c1CW;
+	txlevelfenceCW = 	txlevelfence * c1CW;
+	txlevelfenceBPSK = 	txlevelfence * c1CW;
 	txlevelfenceDIGI = 	txlevelfence * c1DIGI;
 
 	// Параметры АРУ микрофона
@@ -6599,6 +6624,16 @@ board_set_gdigiscale(uint_fast16_t n)	/* Увеличение усиления �
 	if (glob_gdigiscale != n)
 	{
 		glob_gdigiscale = n;
+		board_dsp1regchanged();
+	}
+}
+
+void
+board_set_cwscale(uint_fast16_t n)	/* Увеличение усиления при передаче в цифровых режимах 100..300% */
+{
+	if (glob_cwscale != n)
+	{
+		glob_cwscale = n;
 		board_dsp1regchanged();
 	}
 }
